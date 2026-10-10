@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+:root {
+  --theme-crimson: #B31237;
+  --theme-magenta: #E60067;
+  --theme-saffron: #FF6D00;
+  --theme-gold: #FFD700;
+  --theme-gold-light: #FFF4B8;
+  --theme-cyan: #00E5FF;
+  --theme-emerald: #00E676;
+  --theme-deep: #1F0717;
+  --theme-cream: #FFFDF7;
+}
+
+body {
+  background-color: #1F0717;
+  color: var(--theme-cream);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Radiant Indian Festive Colorful Lighting Background */
+.bg-festive-radiant {
+  background-color: #1F0717;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(230, 0, 103, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 85% 18%, rgba(255, 215, 0, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(255, 109, 0, 0.25) 0%, transparent 55%),
+    radial-gradient(circle at 80% 85%, rgba(0, 229, 255, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(0, 230, 118, 0.2) 0%, transparent 45%),
+    linear-gradient(180deg, #2A091F 0%, #420C2D 50%, #1A0515 100%);
+  background-attachment: fixed;
+}
+
+/* Bright colorful lighting glow effects */
+.glow-gold {
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.5), inset 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.glow-magenta {
+  box-shadow: 0 0 25px rgba(230, 0, 103, 0.5), inset 0 0 15px rgba(230, 0, 103, 0.2);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.5), inset 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.glow-saffron {
+  box-shadow: 0 0 25px rgba(255, 109, 0, 0.5), inset 0 0 15px rgba(255, 109, 0, 0.2);
+}
+
+.festive-gold-gradient {
+  background: linear-gradient(135deg, #FFF6BD 0%, #FFD700 40%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.festive-rainbow-gradient {
+  background: linear-gradient(90deg, #FF1493 0%, #FFD700 25%, #00E5FF 50%, #00E676 75%, #FF6D00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.festive-card {
+  background: rgba(42, 9, 31, 0.88);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  backdrop-filter: blur(14px);
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 215, 0, 0.15);
+}
+
+/* Reference 2: Physical Admission Ticket Perforated Styling with Colorful Highlights */
+.ticket-container {
+  position: relative;
+  background: linear-gradient(145deg, #380C27 0%, #4D0E35 50%, #29081C 100%);
+  border: 2px dashed rgba(255, 215, 0, 0.6);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.25);
+}
+
+.ticket-notch-left {
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  background-color: #1F0717;
+  border-radius: 50%;
+  border-right: 2px dashed rgba(255, 215, 0, 0.6);
+}
+
+.ticket-notch-right {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  background-color: #1F0717;
+  border-radius: 50%;
+  border-left: 2px dashed rgba(255, 215, 0, 0.6);
+}
+
+/* Pulsing Colorful Festival Glow Animations */
+@keyframes festiveBlink {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 12px currentColor); }
+  50% { opacity: 0.6; filter: drop-shadow(0 0 4px currentColor); }
+}
+
+.animate-festive-blink {
+  animation: festiveBlink 2s infinite ease-in-out;
+}
+
+@keyframes rainbowShift {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.animate-rainbow-shift {
+  animation: rainbowShift 12s linear infinite;
+}
+
+@keyframes floatMotif {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(4deg); }
+}
+
+.animate-float {
+  animation: floatMotif 5s ease-in-out infinite;
+}
