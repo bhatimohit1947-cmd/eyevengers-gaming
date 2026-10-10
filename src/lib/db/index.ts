@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import os from 'os';
 import { 
   UserProfile, 
   Campaign, 
@@ -19,17 +20,40 @@ let dbInstance: DatabaseSync | null = null;
 function getDb(): DatabaseSync {
   if (dbInstance) return dbInstance;
 
-  const dataDir = path.join(process.cwd(), '.data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  let dbPath = ':memory:';
+
+  try {
+    const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+    let targetDir = path.join(process.cwd(), '.data');
+
+    if (isServerless) {
+      targetDir = path.join(os.tmpdir(), 'eyevengers-db');
+    }
+
+    try {
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      dbPath = path.join(targetDir, 'eyevengers.db');
+    } catch {
+      // Fallback to /tmp directly or :memory:
+      dbPath = path.join(os.tmpdir(), 'eyevengers.db');
+    }
+  } catch {
+    dbPath = ':memory:';
   }
 
-  const dbPath = path.join(dataDir, 'eyevengers.db');
-  dbInstance = new DatabaseSync(dbPath);
+  try {
+    dbInstance = new DatabaseSync(dbPath);
+  } catch {
+    dbInstance = new DatabaseSync(':memory:');
+  }
   
-  // Enable foreign keys and WAL mode for high concurrency
-  dbInstance.exec('PRAGMA foreign_keys = ON;');
-  dbInstance.exec('PRAGMA journal_mode = WAL;');
+  try {
+    // Enable foreign keys and WAL mode for high concurrency
+    dbInstance.exec('PRAGMA foreign_keys = ON;');
+    dbInstance.exec('PRAGMA journal_mode = WAL;');
+  } catch {}
 
   initSchema(dbInstance);
   seedInitialData(dbInstance);

@@ -20,18 +20,32 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const session = await getSession();
-  const campaign = db.getActiveCampaign();
-  const banners = db.getActiveBanners();
+  let session = null;
+  let campaign = null;
+  let banners: any[] = [];
+  let spinRemaining = 1;
+  let boxRemaining = 1;
 
-  let spinRemaining = campaign ? campaign.spinLimitPerUser : 1;
-  let boxRemaining = campaign ? campaign.boxLimitPerUser : 1;
+  try {
+    session = await getSession();
+  } catch (err) {
+    console.warn('Session check skipped:', err);
+  }
 
-  if (session && campaign) {
-    const spinCount = db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel');
-    const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box');
-    spinRemaining = Math.max(0, campaign.spinLimitPerUser - spinCount);
-    boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);
+  try {
+    campaign = db.getActiveCampaign();
+    banners = db.getActiveBanners();
+    spinRemaining = campaign ? campaign.spinLimitPerUser : 1;
+    boxRemaining = campaign ? campaign.boxLimitPerUser : 1;
+
+    if (session && campaign) {
+      const spinCount = db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel');
+      const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box');
+      spinRemaining = Math.max(0, campaign.spinLimitPerUser - spinCount);
+      boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);
+    }
+  } catch (err) {
+    console.warn('DB initialization in Server Component handled safely:', err);
   }
 
   return (
