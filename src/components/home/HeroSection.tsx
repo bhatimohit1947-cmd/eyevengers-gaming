@@ -114,7 +114,7 @@ export function HeroSection({ user, campaignName = 'Navratri & Festive Optical M
           </div>
           <div className="p-3.5 sm:p-4 rounded-2xl bg-[#2E0B25]/85 border-2 border-[#00E676]/60 shadow-[0_0_15px_rgba(0,230,118,0.25)] flex flex-col items-center">
             <span className="text-lg sm:text-2xl font-black text-[#00E676] drop-shadow-[0_0_10px_#00E676]">Jodhpur</span>
-            <span className="text-[11px] sm:text-xs text-[#FFFDF7] font-bold mt-0.5">Sardarpura Showroom</span>
+            <span className="text-[11px] sm:text-xs text-[#FFFDF7] font-bold mt-0.5">6XX6+X2 Location</span>
           </div>
         </div>
 

@@ -105,7 +105,7 @@ export function BannerSlider({ initialBanners = [] }: BannerSliderProps) {
                 100% Guaranteed Festive Rewards
               </div>
               <div className="text-[11px] text-[#FFF4E3]/70 mt-1">
-                Redeemable at Sardarpura, Jodhpur
+                Redeemable at EYEVENGERS (6XX6+X2), Jodhpur
               </div>
             </div>
           </div>

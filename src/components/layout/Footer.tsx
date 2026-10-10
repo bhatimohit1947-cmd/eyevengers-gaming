@@ -30,20 +30,36 @@ export function Footer() {
             <h4 className="text-xs font-black uppercase tracking-widest text-[#E8C477]">
               Visit Showroom
             </h4>
-            <div className="space-y-2.5 text-xs text-[#FFF4E3]/80">
+            <div className="space-y-2.5 text-xs text-[#FFF4E3]/85">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#FF5149] shrink-0 mt-0.5" />
-                <span>{SHOWROOM_INFO.addressLine}</span>
+                <div className="space-y-0.5">
+                  <div className="font-bold text-[#FFD700]">{SHOWROOM_INFO.plusCode}</div>
+                  <div className="text-[11px] text-[#FFF4E3]/70">{SHOWROOM_INFO.city}, {SHOWROOM_INFO.state}</div>
+                  <a 
+                    href={SHOWROOM_INFO.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-[11px] text-[#00E5FF] hover:underline font-semibold mt-0.5"
+                  >
+                    View on Google Maps ↗
+                  </a>
+                </div>
               </div>
               <div className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-[#E8C477] shrink-0" />
                 <span>{SHOWROOM_INFO.workingHours}</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-[#E8C477] shrink-0" />
-                <a href={`tel:${SHOWROOM_INFO.phone}`} className="hover:text-[#E8C477] transition-colors">
-                  {SHOWROOM_INFO.phone}
-                </a>
+              <div className="flex items-start gap-2.5">
+                <Phone className="w-4 h-4 text-[#E8C477] shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <a href={`tel:${SHOWROOM_INFO.phone}`} className="hover:text-[#E8C477] transition-colors block font-semibold">
+                    {SHOWROOM_INFO.phone}
+                  </a>
+                  <a href={`tel:${SHOWROOM_INFO.secondaryPhone}`} className="hover:text-[#E8C477] transition-colors block text-[11px] text-[#FFF4E3]/75">
+                    {SHOWROOM_INFO.secondaryPhone}
+                  </a>
+                </div>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#E8C477] shrink-0" />

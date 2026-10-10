@@ -63,8 +63,11 @@ export const SHOWROOM_INFO = {
   state: 'Rajasthan',
   country: 'India',
   pincode: '342001',
-  addressLine: 'Sardarpura 9th C Road, Near Jaljog Circle, Jodhpur, Rajasthan 342001',
-  phone: '+91 98290 12345',
+  plusCode: '6XX6+X2 Jodhpur, Rajasthan',
+  addressLine: '6XX6+X2, Jodhpur, Rajasthan, India',
+  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=6XX6%2BX2+Jodhpur+Rajasthan',
+  phone: '+91 72401 58860',
+  secondaryPhone: '+91 88241 87493',
   email: 'care@eyevengers.com',
   workingHours: '10:30 AM - 9:00 PM (All 7 Days)',
 };
