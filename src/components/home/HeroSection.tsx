@@ -2,9 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Sparkles, Gift, ArrowDown, Award, Eye } from 'lucide-react';
+import { Sparkles, Gift, ArrowDown, Award, Eye, MapPin } from 'lucide-react';
 import { MandalaMotif, ToranBorder, DiyaIcon, FestiveStar } from '../ui/FestiveMotifs';
 import { SessionUser } from '@/lib/types';
+import { SHOWROOM_INFO } from '@/lib/theme';
 
 interface HeroSectionProps {
   user: SessionUser | null;
@@ -112,10 +113,21 @@ export function HeroSection({ user, campaignName = 'Navratri & Festive Optical M
             <span className="text-lg sm:text-2xl font-black text-[#00E5FF] drop-shadow-[0_0_10px_#00E5FF]">Free</span>
             <span className="text-[11px] sm:text-xs text-[#FFFDF7] font-bold mt-0.5">Eye Vision Checkup</span>
           </div>
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#2E0B25]/85 border-2 border-[#00E676]/60 shadow-[0_0_15px_rgba(0,230,118,0.25)] flex flex-col items-center">
-            <span className="text-lg sm:text-2xl font-black text-[#00E676] drop-shadow-[0_0_10px_#00E676]">Jodhpur</span>
-            <span className="text-[11px] sm:text-xs text-[#FFFDF7] font-bold mt-0.5">6XX6+X2 Location</span>
-          </div>
+          <a
+            href={SHOWROOM_INFO.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open EYEVENGERS Showroom on Google Maps"
+            className="p-3.5 sm:p-4 rounded-2xl bg-[#2E0B25]/85 border-2 border-[#00E676]/60 shadow-[0_0_15px_rgba(0,230,118,0.25)] flex flex-col items-center justify-center hover:scale-105 hover:border-[#00E676] hover:bg-[#00E676]/10 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-1 text-base sm:text-xl font-black text-[#00E676] drop-shadow-[0_0_10px_#00E676]">
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#00E676] group-hover:animate-bounce" />
+              <span>Store Locator</span>
+            </div>
+            <span className="text-[11px] sm:text-xs text-[#FFFDF7] font-bold mt-0.5 group-hover:text-[#00E676] transition-colors">
+              Open Showroom Map ↗
+            </span>
+          </a>
         </div>
 
       </div>

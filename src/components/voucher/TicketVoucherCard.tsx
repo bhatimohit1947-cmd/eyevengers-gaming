@@ -153,10 +153,16 @@ export function TicketVoucherCard({ voucher }: TicketVoucherCardProps) {
               <span className="font-semibold text-[#E8C477]">Terms:</span> {voucher.terms}
             </p>
 
-            <div className="flex items-center gap-1.5 text-[11px] text-[#E8C477]">
+            <a
+              href={SHOWROOM_INFO.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-[11px] text-[#E8C477] hover:text-[#FFD700] hover:underline"
+              title="Open Google Maps Store Location"
+            >
               <MapPin className="w-3.5 h-3.5 shrink-0 text-[#FF5149]" />
-              <span>Redeem at: {SHOWROOM_INFO.addressLine}</span>
-            </div>
+              <span>Redeem at: {SHOWROOM_INFO.addressLine} ↗</span>
+            </a>
           </div>
 
           {/* Right Ticket Stub: QR Code & PDF download */}

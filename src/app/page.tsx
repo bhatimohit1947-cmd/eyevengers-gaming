@@ -132,21 +132,21 @@ export default async function HomePage() {
             </div>
 
             {/* Showroom Address Highlight Card */}
-            <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#3D0B2B] via-[#520F38] to-[#2D0B25] border-2 border-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.3)] flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="space-y-2 text-center md:text-left">
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FFD700] uppercase tracking-wider">
+            <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#3D0B2B] via-[#4E0E36] to-[#2D0B25] border-2 border-[#FFD700]/70 shadow-[0_0_35px_rgba(255,215,0,0.25)] flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="space-y-2.5 text-center md:text-left">
+                <div className="inline-flex items-center gap-1.5 text-xs font-black text-[#FFD700] uppercase tracking-wider bg-[#FFD700]/10 px-3 py-1 rounded-full border border-[#FFD700]/30">
                   <MapPin className="w-4 h-4 text-[#FF1493] animate-bounce" />
-                  <span>Flagship Showroom Destination</span>
+                  <span>Store Locator & Showroom</span>
                 </div>
                 <div className="text-xl sm:text-2xl font-black text-[#FFFDF7]">
                   {SHOWROOM_INFO.brandName} — {SHOWROOM_INFO.city}, {SHOWROOM_INFO.state}
                 </div>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs sm:text-sm text-[#FFFDF7]/90">
-                  <span>📍 Location Code:</span>
-                  <span className="font-bold text-[#FFD700] bg-[#FFD700]/10 px-2 py-0.5 rounded border border-[#FFD700]/30">{SHOWROOM_INFO.plusCode}</span>
+                  <span>📍 Location:</span>
+                  <span className="font-bold text-[#FFD700] bg-[#FFD700]/15 px-2.5 py-0.5 rounded border border-[#FFD700]/40">{SHOWROOM_INFO.plusCode}</span>
                 </div>
                 <p className="text-xs text-[#FFFDF7]/80">
-                  Open 10:30 AM – 9:00 PM (All 7 Days) • Ph: {SHOWROOM_INFO.phone}
+                  Open {SHOWROOM_INFO.workingHours} • Ph: {SHOWROOM_INFO.phone}
                 </p>
               </div>
 
@@ -155,16 +155,16 @@ export default async function HomePage() {
                   href={SHOWROOM_INFO.mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FFF6BD] via-[#FFD700] to-[#FFA200] text-[#1F0717] font-black text-xs sm:text-sm hover:brightness-110 shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FFF6BD] via-[#FFD700] to-[#FFA200] text-[#1F0717] font-black text-xs sm:text-sm hover:brightness-110 shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
                 >
                   <MapPin className="w-4 h-4 text-[#B31237]" />
-                  <span>Google Maps</span>
+                  <span>Store Locator (Google Maps) ↗</span>
                 </a>
                 <a
                   href={`tel:${SHOWROOM_INFO.phone}`}
                   className="px-6 py-3.5 rounded-xl bg-[#2A0921] border-2 border-[#FFD700]/60 text-[#FFFDF7] font-bold text-xs sm:text-sm hover:bg-[#FFD700]/20 shadow-lg shrink-0 transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5"
                 >
-                  <span>Call Us</span>
+                  <span>Call Showroom</span>
                 </a>
               </div>
             </div>
