@@ -44,7 +44,7 @@ export default function TermsPage() {
           <section className="space-y-2">
             <h2 className="text-base font-bold text-[#E8C477]">3. Voucher Redemption Rules</h2>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Vouchers must be presented at the EYEVENGERS Sardarpura showroom desk via active QR code or verified voucher code.</li>
+              <li>Vouchers must be presented at the EYEVENGERS Bhadu Market showroom desk via active QR code or verified voucher code.</li>
               <li>Each digital voucher is valid for a single transaction and cannot be split across multiple invoices.</li>
               <li>Vouchers are valid for 14 calendar days from the date of issue unless specified otherwise.</li>
               <li>Discounts are applicable against eligible frames, lenses, and prescription eyewear subject to stated minimum invoice values.</li>

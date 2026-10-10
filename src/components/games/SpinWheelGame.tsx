@@ -332,7 +332,7 @@ export function SpinWheelGame({
         <ul className="list-disc pl-5 space-y-1">
           <li>1 Spin eligible per customer during the festive campaign period.</li>
           <li>All rewards generate an authentic digital voucher with an instant showroom QR code.</li>
-          <li>Showroom redemption valid at EYEVENGERS, Sardarpura 9th C Road, Jodhpur.</li>
+          <li>Showroom redemption valid at EYEVENGERS, 137, Jhanwar Rd, Bhadu Market, Jodhpur.</li>
           <li>Vouchers are valid for 14 calendar days from the date of issue.</li>
         </ul>
       </div>

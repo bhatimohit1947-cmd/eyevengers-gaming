@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       staffId: session.id,
       billReference,
       purchaseAmountPaise,
-      showroomLocation: showroomLocation || 'Sardarpura Showroom, Jodhpur',
+      showroomLocation: showroomLocation || 'Bhadu Market Showroom, Jodhpur',
     });
 
     if (!result.success || !result.voucher) {

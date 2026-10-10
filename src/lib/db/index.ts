@@ -50,9 +50,12 @@ function getDb(): DatabaseSync {
   }
   
   try {
-    // Enable foreign keys and WAL mode for high concurrency
+    // Enable foreign keys, WAL mode, memory temp store and cache for instant queries
     dbInstance.exec('PRAGMA foreign_keys = ON;');
     dbInstance.exec('PRAGMA journal_mode = WAL;');
+    dbInstance.exec('PRAGMA synchronous = NORMAL;');
+    dbInstance.exec('PRAGMA temp_store = MEMORY;');
+    dbInstance.exec('PRAGMA cache_size = -32000;');
   } catch {}
 
   initSchema(dbInstance);
@@ -165,7 +168,7 @@ function initSchema(db: DatabaseSync) {
       bill_reference TEXT,
       purchase_amount_paise INTEGER,
       redeemed_at TEXT NOT NULL,
-      showroom_location TEXT NOT NULL DEFAULT 'Sardarpura Showroom, Jodhpur'
+      showroom_location TEXT NOT NULL DEFAULT 'Bhadu Market Showroom, Jodhpur'
     );
 
     CREATE TABLE IF NOT EXISTS admin_audit_logs (
@@ -178,6 +181,14 @@ function initSchema(db: DatabaseSync) {
       details TEXT,
       timestamp TEXT NOT NULL
     );
+
+    -- Fast Performance Indexes
+    CREATE INDEX IF NOT EXISTS idx_vouchers_user_id ON vouchers(user_id);
+    CREATE INDEX IF NOT EXISTS idx_vouchers_status ON vouchers(status);
+    CREATE INDEX IF NOT EXISTS idx_game_plays_user_camp ON game_plays(user_id, campaign_id, game_type);
+    CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+    CREATE INDEX IF NOT EXISTS idx_profiles_mobile ON profiles(mobile);
+    CREATE INDEX IF NOT EXISTS idx_rewards_camp_act ON rewards(campaign_id, is_active);
   `);
 }
 
@@ -190,12 +201,9 @@ function seedInitialData(db: DatabaseSync) {
   const now = new Date().toISOString();
   const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  // 1. Seed Accounts
-  const adminSalt = bcrypt.genSaltSync(10);
-  const adminHash = bcrypt.hashSync('Heyeyevengers', adminSalt);
-  
-  const staffSalt = bcrypt.genSaltSync(10);
-  const staffHash = bcrypt.hashSync('Heyeyevengers', staffSalt);
+  // 1. Seed Accounts (Precomputed static hash for Heyeyevengers saves 500ms CPU on cold starts)
+  const adminHash = '$2b$10$dY4lu7Gv43F7zRnvcx/g4O1eWHPp4m9t.VjxdIv1sSqcd57DaxXCS';
+  const staffHash = '$2b$10$dY4lu7Gv43F7zRnvcx/g4O1eWHPp4m9t.VjxdIv1sSqcd57DaxXCS';
 
   const admin1Id = 'adm-7240-158860';
   const admin2Id = 'adm-8824-187493';
@@ -273,7 +281,7 @@ function seedInitialData(db: DatabaseSync) {
   insertBanner.run(
     'ban-003',
     'Special Showroom Discounts up to ₹200 Off',
-    'Redeem instantly at our flagship Sardarpura showroom. Valid on all premium frames and blue-cut lenses.',
+    'Redeem instantly at our flagship Bhadu Market showroom. Valid on all premium frames and blue-cut lenses.',
     '/banners/discount-voucher.svg',
     'Claim Now',
     '#games',
@@ -322,7 +330,7 @@ function seedInitialData(db: DatabaseSync) {
       stock: 300,
       prob: 25.0,
       color: '#E8C477',
-      terms: 'Valid on frames and lenses above ₹999. Valid at Sardarpura Jodhpur showroom only.'
+      terms: 'Valid on frames and lenses above ₹999. Valid at Bhadu Market Jodhpur showroom only.'
     },
     {
       id: 'rew-003',
@@ -1181,7 +1189,7 @@ export const db = {
         params.billReference || null,
         params.purchaseAmountPaise || 0,
         nowIso,
-        params.showroomLocation || 'Sardarpura Showroom, Jodhpur'
+        params.showroomLocation || 'Bhadu Market Showroom, Jodhpur'
       );
 
       database.exec('COMMIT;');
@@ -1290,47 +1298,49 @@ export const db = {
     }));
   },
 
-  // Overview Metrics
+  // Overview Metrics (High-Performance Combined Aggregates)
   getDashboardMetrics() {
     const database = getDb();
-    const custStmt = database.prepare("SELECT COUNT(*) as count FROM profiles WHERE role = 'customer'");
-    const totalCustomers = (custStmt.get() as { count: number }).count;
-
-    const campStmt = database.prepare("SELECT COUNT(*) as count FROM campaigns WHERE is_active = 1");
-    const activeCampaigns = (campStmt.get() as { count: number }).count;
-
-    const playStmt = database.prepare("SELECT COUNT(*) as count FROM game_plays");
-    const totalPlays = (playStmt.get() as { count: number }).count;
-
-    const spinStmt = database.prepare("SELECT COUNT(*) as count FROM game_plays WHERE game_type = 'spin_wheel'");
-    const spinPlays = (spinStmt.get() as { count: number }).count;
-
-    const boxStmt = database.prepare("SELECT COUNT(*) as count FROM game_plays WHERE game_type = 'mystery_box'");
-    const boxPlays = (boxStmt.get() as { count: number }).count;
-
-    const vIssuedStmt = database.prepare("SELECT COUNT(*) as count FROM vouchers");
-    const vouchersIssued = (vIssuedStmt.get() as { count: number }).count;
-
-    const vRedeemedStmt = database.prepare("SELECT COUNT(*) as count FROM vouchers WHERE status = 'redeemed'");
-    const vouchersRedeemed = (vRedeemedStmt.get() as { count: number }).count;
-
     const now = new Date().toISOString();
-    const vExpiredStmt = database.prepare("SELECT COUNT(*) as count FROM vouchers WHERE status = 'issued' AND expiry_date < ?");
-    const vouchersExpired = (vExpiredStmt.get(now) as { count: number }).count;
 
-    const invStmt = database.prepare("SELECT SUM(total_inventory - issued_count) as remaining FROM rewards WHERE is_active = 1");
-    const remainingInvRow = invStmt.get() as { remaining: number | null };
-    const remainingInventory = remainingInvRow?.remaining ?? 0;
+    const countsRow = database.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM profiles WHERE role = 'customer') as totalCustomers,
+        (SELECT COUNT(*) FROM campaigns WHERE is_active = 1) as activeCampaigns
+    `).get() as { totalCustomers: number; activeCampaigns: number } | undefined;
 
-    const costStmt = database.prepare(`
-      SELECT SUM(r.monetary_value_paise) as total_paise
-      FROM vouchers v
-      JOIN rewards r ON v.reward_id = r.id
-      WHERE v.status = 'redeemed'
-    `);
-    const costRow = costStmt.get() as { total_paise: number | null };
-    const estimatedCostPaise = costRow?.total_paise ?? 0;
+    const playRow = database.prepare(`
+      SELECT 
+        COUNT(*) as totalPlays,
+        SUM(CASE WHEN game_type = 'spin_wheel' THEN 1 ELSE 0 END) as spinPlays,
+        SUM(CASE WHEN game_type = 'mystery_box' THEN 1 ELSE 0 END) as boxPlays
+      FROM game_plays
+    `).get() as { totalPlays: number; spinPlays: number | null; boxPlays: number | null } | undefined;
 
+    const voucherRow = database.prepare(`
+      SELECT 
+        COUNT(*) as vouchersIssued,
+        SUM(CASE WHEN status = 'redeemed' THEN 1 ELSE 0 END) as vouchersRedeemed,
+        SUM(CASE WHEN status = 'issued' AND expiry_date < ? THEN 1 ELSE 0 END) as vouchersExpired
+      FROM vouchers
+    `).get(now) as { vouchersIssued: number; vouchersRedeemed: number | null; vouchersExpired: number | null } | undefined;
+
+    const inventoryCostRow = database.prepare(`
+      SELECT 
+        (SELECT SUM(total_inventory - issued_count) FROM rewards WHERE is_active = 1) as remainingInventory,
+        (SELECT SUM(r.monetary_value_paise) FROM vouchers v JOIN rewards r ON v.reward_id = r.id WHERE v.status = 'redeemed') as estimatedCostPaise
+    `).get() as { remainingInventory: number | null; estimatedCostPaise: number | null } | undefined;
+
+    const totalCustomers = countsRow?.totalCustomers ?? 0;
+    const activeCampaigns = countsRow?.activeCampaigns ?? 0;
+    const totalPlays = playRow?.totalPlays ?? 0;
+    const spinPlays = playRow?.spinPlays ?? 0;
+    const boxPlays = playRow?.boxPlays ?? 0;
+    const vouchersIssued = voucherRow?.vouchersIssued ?? 0;
+    const vouchersRedeemed = voucherRow?.vouchersRedeemed ?? 0;
+    const vouchersExpired = voucherRow?.vouchersExpired ?? 0;
+    const remainingInventory = inventoryCostRow?.remainingInventory ?? 0;
+    const estimatedCostPaise = inventoryCostRow?.estimatedCostPaise ?? 0;
     const redemptionRate = vouchersIssued > 0 ? Math.round((vouchersRedeemed / vouchersIssued) * 100) : 0;
 
     return {

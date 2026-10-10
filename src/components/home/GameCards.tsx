@@ -22,6 +22,30 @@ export function GameCards({
   spinEnabled = true,
   boxEnabled = true,
 }: GameCardsProps) {
+  const [currentSpinRemaining, setCurrentSpinRemaining] = React.useState(spinRemaining);
+  const [currentBoxRemaining, setCurrentBoxRemaining] = React.useState(boxRemaining);
+
+  React.useEffect(() => {
+    setCurrentSpinRemaining(spinRemaining);
+    setCurrentBoxRemaining(boxRemaining);
+
+    if (user) {
+      fetch('/api/games/status')
+        .then(res => res.json())
+        .then(data => {
+          if (data.plays) {
+            if (typeof data.plays.spinRemaining === 'number') {
+              setCurrentSpinRemaining(data.plays.spinRemaining);
+            }
+            if (typeof data.plays.boxRemaining === 'number') {
+              setCurrentBoxRemaining(data.plays.boxRemaining);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user, spinRemaining, boxRemaining]);
+
   const getPlayHref = (target: string) => {
     if (!user) {
       return `/auth/login?redirect=${encodeURIComponent(target)}`;
@@ -98,8 +122,8 @@ export function GameCards({
               {/* Status & Play Counts */}
               <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#FFFDF7]/70 pt-1.5 sm:pt-2 mb-2 sm:mb-4 border-t border-[#FFD700]/20">
                 <span className="truncate">Chances:</span>
-                <span className="font-bold text-[#FFD700] text-xs sm:text-sm shrink-0">
-                  {user ? `${spinRemaining} Left` : '1 Free'}
+                <span className={`font-bold text-xs sm:text-sm shrink-0 ${user && currentSpinRemaining === 0 ? 'text-[#00E676]' : 'text-[#FFD700]'}`}>
+                  {user ? (currentSpinRemaining > 0 ? `${currentSpinRemaining} Left` : '0 Left (Claimed)') : '1 Free'}
                 </span>
               </div>
             </div>
@@ -107,14 +131,20 @@ export function GameCards({
             {/* Action Button */}
             <div className="p-2.5 sm:p-6 md:p-8 pt-0">
               <Link
-                href={getPlayHref('/games/spin')}
+                href={user ? (currentSpinRemaining > 0 ? '/games/spin' : '/my-rewards') : '/auth/login?redirect=/games/spin'}
                 className={`w-full py-2 sm:py-3.5 px-2 sm:px-4 rounded-xl flex items-center justify-center gap-1 sm:gap-2 font-black text-[11px] sm:text-sm md:text-base transition-all shadow-lg ${
                   spinEnabled
-                    ? 'bg-gradient-to-r from-[#FFF6BD] via-[#FFD700] to-[#FFA200] text-[#1F0717] hover:brightness-110 shadow-[0_0_20px_rgba(255,215,0,0.4)] active:scale-95'
+                    ? (user && currentSpinRemaining === 0
+                        ? 'bg-[#2A0921] border-2 border-[#00E676]/60 text-[#00E676] hover:bg-[#00E676]/20 shadow-[0_0_15px_rgba(0,230,118,0.25)]'
+                        : 'bg-gradient-to-r from-[#FFF6BD] via-[#FFD700] to-[#FFA200] text-[#1F0717] hover:brightness-110 shadow-[0_0_20px_rgba(255,215,0,0.4)] active:scale-95')
                     : 'bg-gray-800 text-gray-500 cursor-not-allowed pointer-events-none'
                 }`}
               >
-                <span className="truncate">{user ? (spinRemaining > 0 ? 'Spin Wheel' : 'Rules') : 'Login & Spin'}</span>
+                <span className="truncate">
+                  {user 
+                    ? (currentSpinRemaining > 0 ? 'Spin Wheel' : 'View Voucher ↗') 
+                    : 'Login & Spin'}
+                </span>
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
               </Link>
             </div>
@@ -168,8 +198,8 @@ export function GameCards({
               {/* Status & Play Counts */}
               <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#FFFDF7]/70 pt-1.5 sm:pt-2 mb-2 sm:mb-4 border-t border-[#FF1493]/20">
                 <span className="truncate">Chances:</span>
-                <span className="font-bold text-[#FF1493] text-xs sm:text-sm shrink-0">
-                  {user ? `${boxRemaining} Left` : '1 Free'}
+                <span className={`font-bold text-xs sm:text-sm shrink-0 ${user && currentBoxRemaining === 0 ? 'text-[#00E676]' : 'text-[#FF1493]'}`}>
+                  {user ? (currentBoxRemaining > 0 ? `${currentBoxRemaining} Left` : '0 Left (Claimed)') : '1 Free'}
                 </span>
               </div>
             </div>
@@ -177,14 +207,20 @@ export function GameCards({
             {/* Action Button */}
             <div className="p-2.5 sm:p-6 md:p-8 pt-0">
               <Link
-                href={getPlayHref('/games/boxes')}
+                href={user ? (currentBoxRemaining > 0 ? '/games/boxes' : '/my-rewards') : '/auth/login?redirect=/games/boxes'}
                 className={`w-full py-2 sm:py-3.5 px-2 sm:px-4 rounded-xl flex items-center justify-center gap-1 sm:gap-2 font-black text-[11px] sm:text-sm md:text-base transition-all shadow-lg ${
                   boxEnabled
-                    ? 'bg-gradient-to-r from-[#FF1493] via-[#E60067] to-[#B31237] text-[#FFFDF7] hover:brightness-110 shadow-[0_0_20px_rgba(255,20,147,0.4)] active:scale-95'
+                    ? (user && currentBoxRemaining === 0
+                        ? 'bg-[#2A0921] border-2 border-[#00E676]/60 text-[#00E676] hover:bg-[#00E676]/20 shadow-[0_0_15px_rgba(0,230,118,0.25)]'
+                        : 'bg-gradient-to-r from-[#FF1493] via-[#E60067] to-[#B31237] text-[#FFFDF7] hover:brightness-110 shadow-[0_0_20px_rgba(255,20,147,0.4)] active:scale-95')
                     : 'bg-gray-800 text-gray-500 cursor-not-allowed pointer-events-none'
                 }`}
               >
-                <span className="truncate">{user ? (boxRemaining > 0 ? 'Open Box' : 'Rules') : 'Login & Open'}</span>
+                <span className="truncate">
+                  {user 
+                    ? (currentBoxRemaining > 0 ? 'Open Gift Box' : 'View Voucher ↗') 
+                    : 'Login & Open'}
+                </span>
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
               </Link>
             </div>

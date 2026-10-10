@@ -104,7 +104,7 @@ export default function AdminStaffPage() {
                       Showroom Staff
                     </span>
                   </td>
-                  <td className="p-3 text-gray-400">Sardarpura Showroom, Jodhpur</td>
+                  <td className="p-3 text-gray-400">Bhadu Market Showroom, Jodhpur</td>
                   <td className="p-3">
                     <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
                       {s.status}

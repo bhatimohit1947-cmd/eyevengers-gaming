@@ -60,7 +60,7 @@ export default function MyRewardsPage() {
             My Eyewear Vouchers
           </h1>
           <p className="text-sm sm:text-base text-[#FFF4E3]/80 mt-2">
-            Download your festive admission-ticket vouchers or present the QR code at the EYEVENGERS Sardarpura showroom counter.
+            Download your festive admission-ticket vouchers or present the QR code at the EYEVENGERS Bhadu Market showroom counter.
           </p>
         </div>
 

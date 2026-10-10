@@ -48,8 +48,12 @@ export function Footer() {
                   Maps ↗
                 </span>
               </div>
-              <div className="mt-1.5 font-bold text-[#FFD700] text-xs">{SHOWROOM_INFO.plusCode}</div>
-              <div className="text-[11px] text-[#FFF4E3]/75">{SHOWROOM_INFO.city}, {SHOWROOM_INFO.state}</div>
+              <div className="mt-1.5 font-bold text-[#FFD700] text-xs leading-snug">
+                137, Jhanwar Rd, Bhadu Market
+              </div>
+              <div className="text-[10px] text-[#FFF4E3]/80 leading-tight mt-0.5">
+                opp. Birla School, Vinayak Nagar, Jodhpur - 342014
+              </div>
             </a>
 
             <div className="space-y-2 text-xs text-[#FFF4E3]/85 pt-1">

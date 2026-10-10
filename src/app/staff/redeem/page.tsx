@@ -94,7 +94,7 @@ function RedeemContent() {
           voucherId: voucher.id,
           billReference: billReference.trim() || undefined,
           purchaseAmount: purchaseAmount ? parseFloat(purchaseAmount) : undefined,
-          showroomLocation: 'Sardarpura Showroom, Jodhpur',
+          showroomLocation: 'Bhadu Market Showroom, Jodhpur',
         }),
       });
 

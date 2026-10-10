@@ -44,7 +44,7 @@ export default function PrivacyPage() {
           <section className="space-y-2">
             <h2 className="text-base font-bold text-[#E8C477]">3. Showroom Redemption Records</h2>
             <p>
-              When a voucher is redeemed at our Sardarpura showroom, we record the redemption timestamp, staff desk identifier, and billing invoice reference to prevent duplicate voucher usage and verify legitimate reward fulfillment.
+              When a voucher is redeemed at our Bhadu Market showroom, we record the redemption timestamp, staff desk identifier, and billing invoice reference to prevent duplicate voucher usage and verify legitimate reward fulfillment.
             </p>
           </section>
 

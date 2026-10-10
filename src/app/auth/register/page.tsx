@@ -116,7 +116,7 @@ function RegisterForm() {
             />
           </div>
           <p className="text-[10px] text-gray-400 mt-1">
-            Used to verify vouchers at the Sardarpura showroom.
+            Used to verify vouchers at the EYEVENGERS showroom.
           </p>
         </div>
 

@@ -12,6 +12,7 @@ interface MysteryBoxesGameProps {
 
 export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGameProps) {
   const [remainingPlays, setRemainingPlays] = useState(initialRemainingPlays);
+  const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
   const [isOpening, setIsOpening] = useState(false);
   const [revealedBoxIndex, setRevealedBoxIndex] = useState<number | null>(null);
@@ -28,6 +29,9 @@ export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGame
     fetch('/api/games/status')
       .then(res => res.json())
       .then(data => {
+        if (data.user) {
+          setUser(data.user);
+        }
         if (data.plays) {
           setRemainingPlays(data.plays.boxRemaining);
         }
@@ -36,7 +40,17 @@ export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGame
   }, []);
 
   const handleBoxSelect = async (boxIndex: number) => {
-    if (isOpening || remainingPlays <= 0 || revealedBoxIndex !== null) return;
+    if (isOpening || revealedBoxIndex !== null) return;
+
+    if (!user) {
+      window.location.href = `/auth/login?redirect=${encodeURIComponent('/games/boxes')}`;
+      return;
+    }
+
+    if (remainingPlays <= 0) {
+      window.location.href = '/my-rewards';
+      return;
+    }
 
     setSelectedBoxIndex(boxIndex);
     setIsOpening(true);
@@ -105,7 +119,7 @@ export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGame
       <ToranBorder className="mb-4" />
 
       {/* Header */}
-      <div className="text-center mb-10">
+      <div className="text-center mb-8">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#681F2B]/70 border border-[#E8C477]/30 text-xs font-bold text-[#FF5149] mb-2">
           <Sparkles className="w-3.5 h-3.5 text-[#E8C477]" />
           <span>Navratri Mystery Gift Reveal</span>
@@ -118,9 +132,46 @@ export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGame
         </p>
 
         <div className="inline-block mt-4 px-4 py-1.5 rounded-xl bg-[#2A171D] border border-[#E8C477]/40 text-xs font-bold text-[#FFF1CF]">
-          Chances Remaining: <span className="text-[#FF5149] text-sm font-black">{remainingPlays}</span>
+          Chances Remaining: <span className={`${remainingPlays > 0 ? 'text-[#00E676]' : 'text-gray-400'} text-sm font-black`}>
+            {user ? `${remainingPlays} Left` : '1 Free'}
+          </span>
         </div>
       </div>
+
+      {/* Auth / Played Notification Banners */}
+      {!user && (
+        <div className="mb-8 p-4 rounded-2xl bg-[#2A0921]/90 border border-[#FFD700]/50 max-w-md mx-auto text-center space-y-2 shadow-lg">
+          <p className="text-xs text-[#FFF4E3]/90">
+            Log in with your mobile number to unlock and claim your free festive gift!
+          </p>
+          <Link
+            href="/auth/login?redirect=/games/boxes"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-[#FFE066] to-[#FFD700] text-[#1F0717] font-black text-xs uppercase tracking-wider hover:brightness-110 shadow-md"
+          >
+            <span>Log In & Open Box ➔</span>
+          </Link>
+        </div>
+      )}
+
+      {user && remainingPlays <= 0 && revealedBoxIndex === null && (
+        <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-[#2A0921]/90 border-2 border-[#00E676]/60 shadow-[0_0_25px_rgba(0,230,118,0.25)] max-w-lg mx-auto text-center space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00E676]/20 text-[#00E676] text-xs font-black">
+            <span>✓ Mystery Box Played (0 Chances Left)</span>
+          </div>
+          <h3 className="text-lg sm:text-xl font-black text-[#FFFDF7]">
+            You have already unwrapped your Mystery Gift Box!
+          </h3>
+          <p className="text-xs text-[#FFF4E3]/80">
+            Your digital discount voucher is ready in your wallet. Present it at the EYEVENGERS showroom to redeem.
+          </p>
+          <Link
+            href="/my-rewards"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00B0FF] text-[#1F0717] font-black text-xs sm:text-sm shadow-lg hover:scale-105 transition-transform"
+          >
+            <span>View My Reward Voucher 🎟️</span>
+          </Link>
+        </div>
+      )}
 
       {/* Error Message */}
       {errorMessage && (
@@ -141,11 +192,11 @@ export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGame
             <button
               key={index}
               onClick={() => handleBoxSelect(index)}
-              disabled={isOpening || remainingPlays <= 0 || revealedBoxIndex !== null}
-              className={`group relative h-48 sm:h-56 rounded-2xl bg-gradient-to-br ${styling.base} border-2 ${styling.border} p-4 flex flex-col items-center justify-center transition-all duration-300 shadow-2xl ${
+              disabled={isOpening || revealedBoxIndex !== null}
+              className={`group relative h-48 sm:h-56 rounded-2xl bg-gradient-to-br ${styling.base} border-2 ${styling.border} p-4 flex flex-col items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer ${
                 remainingPlays > 0 && revealedBoxIndex === null
-                  ? 'hover:-translate-y-2 hover:shadow-[0_20px_35px_rgba(232,196,119,0.25)] cursor-pointer'
-                  : 'cursor-not-allowed opacity-90'
+                  ? 'hover:-translate-y-2 hover:shadow-[0_20px_35px_rgba(232,196,119,0.25)]'
+                  : 'hover:border-[#00E676]/60'
               } ${isSelected && isOpening ? 'animate-pulse scale-105 border-[#E8C477]' : ''}`}
               style={{
                 transformStyle: 'preserve-3d',
@@ -173,7 +224,13 @@ export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGame
               {/* Status Indicator */}
               <div className="absolute bottom-3 inset-x-0 text-center z-10">
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#FFF1CF] bg-[#21171A]/80 px-2.5 py-0.5 rounded-full border border-[#E8C477]/30">
-                  {isSelected && isOpening ? 'Opening...' : isRevealed ? 'Opened' : 'Open Box'}
+                  {isSelected && isOpening 
+                    ? 'Opening...' 
+                    : isRevealed 
+                    ? 'Opened' 
+                    : remainingPlays <= 0 
+                    ? 'View Voucher ↗' 
+                    : 'Open Box'}
                 </span>
               </div>
             </button>
@@ -225,7 +282,7 @@ export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGame
             </div>
 
             <p className="text-xs text-[#FFF4E3]/70 mb-6">
-              Your digital festive voucher has been saved in your rewards wallet. Present it at the EYEVENGERS Sardarpura showroom.
+              Your digital festive voucher has been saved in your rewards wallet. Present it at the EYEVENGERS showroom (137, Jhanwar Rd, Bhadu Market, Jodhpur).
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">

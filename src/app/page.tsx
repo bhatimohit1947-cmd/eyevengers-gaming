@@ -125,7 +125,7 @@ export default async function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold text-[#FFFDF7]">Instant Showroom Redemption</h3>
                 <p className="text-xs text-[#FFFDF7]/75 leading-relaxed">
-                  Present your winning festive ticket voucher QR code at our Sardarpura counter for immediate billing deductions and complimentary upgrades.
+                  Present your winning festive ticket voucher QR code at our Bhadu Market showroom counter for immediate billing deductions and complimentary upgrades.
                 </p>
               </div>
 
@@ -141,9 +141,16 @@ export default async function HomePage() {
                 <div className="text-xl sm:text-2xl font-black text-[#FFFDF7]">
                   {SHOWROOM_INFO.brandName} — {SHOWROOM_INFO.city}, {SHOWROOM_INFO.state}
                 </div>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs sm:text-sm text-[#FFFDF7]/90">
-                  <span>📍 Location:</span>
-                  <span className="font-bold text-[#FFD700] bg-[#FFD700]/15 px-2.5 py-0.5 rounded border border-[#FFD700]/40">{SHOWROOM_INFO.plusCode}</span>
+                <div className="flex flex-col gap-1 text-xs sm:text-sm text-[#FFFDF7]/90">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                    <span>📍 Address:</span>
+                    <span className="font-bold text-[#FFD700] bg-[#FFD700]/15 px-2.5 py-0.5 rounded border border-[#FFD700]/40">
+                      137, Jhanwar Rd, Bhadu Market
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#FFFDF7]/75">
+                    opp. Birla School, opposite Royal Madrasi Restaurant, Vinayak Nagar, Jodhpur (342014)
+                  </div>
                 </div>
                 <p className="text-xs text-[#FFFDF7]/80">
                   Open {SHOWROOM_INFO.workingHours} • Ph: {SHOWROOM_INFO.phone}

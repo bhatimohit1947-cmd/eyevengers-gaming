@@ -57,7 +57,7 @@ export default function AdminRewardsPage() {
     setTotalInventory(200);
     setProbabilityPercent(10);
     setApplicableGame('both');
-    setTerms('Valid at Sardarpura showroom on purchases above ₹499.');
+    setTerms('Valid at Bhadu Market showroom on purchases above ₹499.');
     setIsActive(true);
     setColor('#E8C477');
     setErrorMsg(null);
