@@ -549,9 +549,71 @@ export async function syncCloudProfilesToLocalDb(database: any) {
           p.created_at,
           p.updated_at
         );
-      } catch {}
+      } catch (innerErr) {
+        // Continue with other profiles
+      }
     }
   } catch (err) {
     console.warn('Sync profiles from cloud error:', err);
+  }
+}
+
+export async function getCloudBanners(onlyActive = true): Promise<any[]> {
+  const client = getSupabase();
+  if (!client) return [];
+
+  try {
+    let query = client.from('banners').select('*').order('display_order', { ascending: true });
+    if (onlyActive) {
+      query = query.eq('is_active', true);
+    }
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(b => ({
+      id: b.id,
+      title: b.title,
+      subtitle: b.subtitle,
+      imageUrl: b.image_url,
+      ctaText: b.cta_text,
+      ctaLink: b.cta_link,
+      displayOrder: b.display_order,
+      isActive: !!b.is_active,
+      startDate: b.start_date,
+      endDate: b.end_date,
+      theme: b.theme,
+      createdAt: b.created_at,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function updateCloudBanner(id: string, updates: Partial<any>) {
+  const client = getSupabase();
+  if (!client) return;
+
+  try {
+    const patch: any = {};
+    if (updates.isActive !== undefined) patch.is_active = updates.isActive;
+    if (updates.title !== undefined) patch.title = updates.title;
+    if (updates.subtitle !== undefined) patch.subtitle = updates.subtitle;
+    if (updates.imageUrl !== undefined) patch.image_url = updates.imageUrl;
+    if (updates.ctaText !== undefined) patch.cta_text = updates.ctaText;
+    if (updates.ctaLink !== undefined) patch.cta_link = updates.ctaLink;
+
+    await client.from('banners').update(patch).eq('id', id);
+  } catch (err) {
+    console.warn('Update cloud banner error:', err);
+  }
+}
+
+export async function toggleAllCloudBanners(isActive: boolean) {
+  const client = getSupabase();
+  if (!client) return;
+
+  try {
+    await client.from('banners').update({ is_active: isActive }).neq('id', '00000000-0000-0000-0000-000000000000');
+  } catch (err) {
+    console.warn('Toggle all cloud banners error:', err);
   }
 }

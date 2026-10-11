@@ -63,111 +63,197 @@ export function SpinWheelGame({
 
     const size = canvas.width;
     const center = size / 2;
-    const radius = center - 16;
+    const radius = center - 24;
     const count = rewards.length;
     const arc = (2 * Math.PI) / count;
 
     ctx.clearRect(0, 0, size, size);
 
-    // Segment color palette tailored for Navratri festive theme
-    const sliceColors = [
-      '#681F2B', // Maroon
-      '#C93B3B', // Festive Red
-      '#2A171D', // Deep Wine
-      '#E8C477', // Antique Gold
-      '#FF5149', // Coral
-      '#852535', // Crimson
-      '#44141E', // Dark Plum
-      '#D4AF37', // Gold Leaf
-      '#B03333', // Ruby Red
-      '#531A24', // Deep Mahogany
+    // Bright, vibrant, festive celebratory palette
+    const slicePalette = [
+      { bg1: '#FF5722', bg2: '#D84315', text: '#FFFFFF', accent: '#FFE082' }, // Radiant Saffron Orange
+      { bg1: '#E91E63', bg2: '#AD1457', text: '#FFFFFF', accent: '#FFF59D' }, // Vivid Rani Pink
+      { bg1: '#00B0FF', bg2: '#00838F', text: '#FFFFFF', accent: '#FFD54F' }, // Bright Peacock Blue
+      { bg1: '#FFB300', bg2: '#FF8F00', text: '#3E1000', accent: '#FFFDE7' }, // Glowing Festive Gold
+      { bg1: '#00C853', bg2: '#1B5E20', text: '#FFFFFF', accent: '#C8E6C9' }, // Emerald Green
+      { bg1: '#8E24AA', bg2: '#512DA8', text: '#FFFFFF', accent: '#FFD54F' }, // Royal Purple
+      { bg1: '#FF1744', bg2: '#C2185B', text: '#FFFFFF', accent: '#FFE082' }, // Bright Ruby Coral
+      { bg1: '#00E5FF', bg2: '#0091EA', text: '#002B49', accent: '#FFFFFF' }, // Electric Cyan
+      { bg1: '#F57C00', bg2: '#E65100', text: '#FFFFFF', accent: '#FFF9C4' }, // Deep Amber
+      { bg1: '#00E676', bg2: '#00897B', text: '#003314', accent: '#FFFFFF' }, // Vibrant Mint Lime
     ];
 
+    // 1. Draw Each Bright Slice with Radial Gradient
     rewards.forEach((item, i) => {
       const angle = i * arc;
+      const theme = slicePalette[i % slicePalette.length];
 
-      // Draw Slice
+      // Slice sector
+      ctx.save();
       ctx.beginPath();
-      ctx.fillStyle = sliceColors[i % sliceColors.length];
       ctx.moveTo(center, center);
       ctx.arc(center, center, radius, angle, angle + arc);
-      ctx.lineTo(center, center);
+      ctx.closePath();
+
+      // Rich radiant radial gradient from center to perimeter
+      const grad = ctx.createRadialGradient(center, center, 40, center, center, radius);
+      grad.addColorStop(0, '#FFE8A3');
+      grad.addColorStop(0.2, theme.bg1);
+      grad.addColorStop(1, theme.bg2);
+      ctx.fillStyle = grad;
       ctx.fill();
 
-      // Golden Slice Border
-      ctx.strokeStyle = 'rgba(232, 196, 119, 0.45)';
-      ctx.lineWidth = 2;
+      // Sharp golden divider line with subtle shimmer
+      ctx.strokeStyle = '#FFE082';
+      ctx.lineWidth = 2.5;
       ctx.stroke();
+
+      // Decorative mini diamond / star near the outer rim of each slice
+      const midAngle = angle + arc / 2;
+      const markerDist = radius - 14;
+      const mx = center + markerDist * Math.cos(midAngle);
+      const my = center + markerDist * Math.sin(midAngle);
+
+      ctx.beginPath();
+      ctx.arc(mx, my, 3.5, 0, 2 * Math.PI);
+      ctx.fillStyle = '#FFF8E1';
+      ctx.shadowColor = '#FFD54F';
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.restore();
 
       // Text label inside slice
       ctx.save();
-      const textAngle = angle + arc / 2;
       ctx.translate(center, center);
-      ctx.rotate(textAngle);
+      ctx.rotate(midAngle);
 
-      const isGoldSlice = sliceColors[i % sliceColors.length] === '#E8C477' || sliceColors[i % sliceColors.length] === '#D4AF37';
-      ctx.fillStyle = isGoldSlice ? '#21171A' : '#FFF4E3';
-      ctx.font = 'bold 13px system-ui, sans-serif';
+      // Contrast drop shadow for ultra-clear legibility
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+
+      ctx.fillStyle = theme.text;
+      ctx.font = '900 13px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
 
       // Truncate cleanly for wheel radius
       const label = item.name.length > 20 ? item.name.substring(0, 18) + '..' : item.name;
-      ctx.fillText(label, radius - 24, 0);
+      ctx.fillText(label, radius - 26, 0);
 
       ctx.restore();
     });
 
-    // Outer Golden Metallic Rim
+    // 2. Inner Golden Border
+    ctx.save();
     ctx.beginPath();
-    ctx.arc(center, center, radius + 8, 0, 2 * Math.PI);
-    ctx.strokeStyle = '#E8C477';
-    ctx.lineWidth = 10;
+    ctx.arc(center, center, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Wide Decorative Carnival Golden Rim with LED Light Bulbs
+    const rimWidth = 18;
+    const rimOuterRadius = radius + rimWidth;
+
+    // Rim metallic ring gradient
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(center, center, rimOuterRadius, 0, 2 * Math.PI);
+    ctx.arc(center, center, radius, 0, 2 * Math.PI, true);
+    const rimGrad = ctx.createRadialGradient(center, center, radius, center, center, rimOuterRadius);
+    rimGrad.addColorStop(0, '#B8860B');
+    rimGrad.addColorStop(0.3, '#FFD700');
+    rimGrad.addColorStop(0.7, '#FFF3A8');
+    rimGrad.addColorStop(1, '#8B6508');
+    ctx.fillStyle = rimGrad;
+    ctx.fill();
+
+    // Gold outer ridge
+    ctx.beginPath();
+    ctx.arc(center, center, rimOuterRadius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#FFE89E';
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
+    // Glowing Carnival LED Bulbs around the perimeter
+    const bulbCount = Math.max(20, count * 3);
+    const bulbColors = ['#FFFFFF', '#FFEB3B', '#FF3D00', '#00E676', '#00E5FF', '#FF007F'];
+
+    for (let s = 0; s < bulbCount; s++) {
+      const bulbAngle = (s * 2 * Math.PI) / bulbCount;
+      const bx = center + (radius + rimWidth / 2) * Math.cos(bulbAngle);
+      const by = center + (radius + rimWidth / 2) * Math.sin(bulbAngle);
+      const bColor = bulbColors[s % bulbColors.length];
+
+      // Outer bulb glow
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(bx, by, 4.5, 0, 2 * Math.PI);
+      ctx.fillStyle = bColor;
+      ctx.shadowColor = bColor;
+      ctx.shadowBlur = 10;
+      ctx.fill();
+
+      // Inner bulb highlight
+      ctx.beginPath();
+      ctx.arc(bx, by, 2, 0, 2 * Math.PI);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // 4. Center 3D Ornate Golden Hub & Medallion
+    ctx.save();
+    // Shadow underneath center hub
     ctx.beginPath();
-    ctx.arc(center, center, radius + 13, 0, 2 * Math.PI);
-    ctx.strokeStyle = '#FFF1CF';
+    ctx.arc(center, center, 46, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 12;
+    ctx.fill();
+
+    // Outer gold stepped ring
+    ctx.beginPath();
+    ctx.arc(center, center, 44, 0, 2 * Math.PI);
+    const hubGrad1 = ctx.createLinearGradient(center - 44, center - 44, center + 44, center + 44);
+    hubGrad1.addColorStop(0, '#FFE8A3');
+    hubGrad1.addColorStop(0.5, '#FFD700');
+    hubGrad1.addColorStop(1, '#8B6508');
+    ctx.fillStyle = hubGrad1;
+    ctx.fill();
+    ctx.strokeStyle = '#FFFDE7';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Center jewel circle (Festive Ruby / Crimson)
+    ctx.beginPath();
+    ctx.arc(center, center, 34, 0, 2 * Math.PI);
+    const rubyGrad = ctx.createRadialGradient(center - 8, center - 8, 4, center, center, 34);
+    rubyGrad.addColorStop(0, '#FF5252');
+    rubyGrad.addColorStop(0.5, '#C2185B');
+    rubyGrad.addColorStop(1, '#4A0020');
+    ctx.fillStyle = rubyGrad;
+    ctx.fill();
+    ctx.strokeStyle = '#FFD700';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Golden Studs along outer rim
-    const studCount = count * 3;
-    for (let s = 0; s < studCount; s++) {
-      const studAngle = (s * 2 * Math.PI) / studCount;
-      const sx = center + (radius + 8) * Math.cos(studAngle);
-      const sy = center + (radius + 8) * Math.sin(studAngle);
-
-      ctx.beginPath();
-      ctx.arc(sx, sy, 3, 0, 2 * Math.PI);
-      ctx.fillStyle = '#FFF1CF';
-      ctx.fill();
-      ctx.strokeStyle = '#681F2B';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
-    // Center Ornate Hub
-    ctx.beginPath();
-    ctx.arc(center, center, 44, 0, 2 * Math.PI);
-    ctx.fillStyle = '#21171A';
-    ctx.fill();
-    ctx.strokeStyle = '#E8C477';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(center, center, 36, 0, 2 * Math.PI);
-    ctx.fillStyle = '#681F2B';
-    ctx.fill();
-
-    ctx.fillStyle = '#FFF1CF';
+    // Sparkle star at center core
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = '#FFF8E7';
     ctx.font = '900 13px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('EYE', center, center - 6);
-    ctx.font = '700 9px system-ui, sans-serif';
-    ctx.fillText('VENGERS', center, center + 7);
+    ctx.fillText('SPIN', center, center - 7);
+    ctx.font = '800 10px system-ui, sans-serif';
+    ctx.fillStyle = '#FFD54F';
+    ctx.fillText('WIN', center, center + 7);
+    ctx.restore();
   }, [rewards]);
 
   const handleSpinClick = async () => {
@@ -271,15 +357,20 @@ export function SpinWheelGame({
       {/* WHEEL CONTAINER */}
       <div className="relative flex flex-col items-center justify-center my-6">
         
-        {/* Pointer Triangle at Top */}
-        <div className="relative z-20 -mb-5 flex flex-col items-center">
-          <div className="w-8 h-10 bg-gradient-to-b from-[#FFF1CF] via-[#E8C477] to-[#C93B3B] clip-path-pointer shadow-2xl filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
-               style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }}
-          />
+        {/* Decorative Golden & Ruby Pointer Arrow at Top */}
+        <div className="relative z-20 -mb-6 flex flex-col items-center pointer-events-none">
+          <div className="relative w-10 h-12 flex items-center justify-center filter drop-shadow-[0_6px_12px_rgba(0,0,0,0.85)]">
+            <div
+              className="w-9 h-11 bg-gradient-to-b from-[#FFFDE7] via-[#FFD700] to-[#D50000] border-t-2 border-[#FFFFFF]"
+              style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }}
+            />
+            {/* Sparkling ruby jewel on top of the pointer */}
+            <div className="absolute top-1.5 w-3.5 h-3.5 rounded-full bg-[#FF1744] border border-[#FFF9C4] shadow-[0_0_10px_#FF1744]" />
+          </div>
         </div>
 
-        {/* Canvas Wheel with CSS Rotation */}
-        <div className="relative p-2 rounded-full bg-gradient-to-br from-[#2D161F] to-[#21171A] border-4 border-[#E8C477]/30 shadow-[0_0_50px_rgba(232,196,119,0.25)]">
+        {/* Canvas Wheel with Radiant Festive Aura */}
+        <div className="relative p-2.5 rounded-full bg-gradient-to-tr from-[#3D1420] via-[#631B2D] to-[#2B0E17] border-4 border-[#FFD700]/80 shadow-[0_0_60px_rgba(255,215,0,0.4),0_0_100px_rgba(255,23,68,0.25)]">
           <canvas
             ref={canvasRef}
             width={480}

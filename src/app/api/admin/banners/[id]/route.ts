@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { updateCloudBanner } from '@/lib/db/supabaseSync';
 
 export async function PUT(
   req: Request,
@@ -15,6 +16,9 @@ export async function PUT(
 
     const body = await req.json();
     const updated = db.updateBanner(id, body);
+    try {
+      await updateCloudBanner(id, body);
+    } catch {}
     if (!updated) {
       return NextResponse.json({ error: 'Banner not found' }, { status: 404 });
     }

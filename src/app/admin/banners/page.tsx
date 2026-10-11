@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Banner } from '@/lib/types';
-import { Plus, Edit3, Trash2, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Image as ImageIcon, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -33,6 +33,40 @@ export default function AdminBannersPage() {
   useEffect(() => {
     fetchBanners();
   }, []);
+
+  const handleToggleVisibility = async (b: Banner) => {
+    try {
+      const newStatus = !b.isActive;
+      // Optimistic update
+      setBanners(prev => prev.map(item => item.id === b.id ? { ...item, isActive: newStatus } : item));
+      await fetch(`/api/admin/banners/${b.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus }),
+      });
+      fetchBanners();
+    } catch {
+      fetchBanners();
+    }
+  };
+
+  const handleToggleAll = async (targetActive: boolean) => {
+    try {
+      setBanners(prev => prev.map(item => ({ ...item, isActive: targetActive })));
+      await Promise.all(
+        banners.map(b =>
+          fetch(`/api/admin/banners/${b.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: targetActive }),
+          })
+        )
+      );
+      fetchBanners();
+    } catch {
+      fetchBanners();
+    }
+  };
 
   const openCreateModal = () => {
     setEditingBanner(null);
@@ -111,42 +145,96 @@ export default function AdminBannersPage() {
     }
   };
 
+  const activeCount = banners.filter(b => b.isActive).length;
+
   return (
     <div className="space-y-6">
       
-      <div className="flex items-center justify-between pb-4 border-b border-[#E8C477]/20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8C477]/20">
         <div>
-          <h1 className="text-2xl font-black text-[#FFF4E3]">Homepage Promotional Banners</h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Manage the hero offer slider, promotional headings, and call-to-actions.
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-[#FFF4E3]">Homepage Promotional Banners</h1>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+              activeCount > 0 
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40' 
+                : 'bg-red-950 text-red-300 border-red-500/40'
+            }`}>
+              {activeCount > 0 ? `${activeCount} Visible on Site` : 'All Banners Hidden'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Toggle banners visibility on the website homepage slider or edit promotional text.
           </p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2.5 rounded-xl bg-[#E8C477] text-[#21171A] font-bold text-xs hover:bg-[#FFF1CF] shadow-md flex items-center gap-1.5"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Banner</span>
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {banners.length > 0 && (
+            <>
+              {activeCount > 0 ? (
+                <button
+                  onClick={() => handleToggleAll(false)}
+                  className="px-3 py-2 rounded-xl bg-[#2A171D] border border-amber-500/50 hover:bg-amber-950/60 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                  title="Hide all promotional banners from the customer homepage"
+                >
+                  <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Hide Banner Section</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleToggleAll(true)}
+                  className="px-3 py-2 rounded-xl bg-[#2A171D] border border-emerald-500/50 hover:bg-emerald-950/60 text-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                  title="Make banners visible on the customer homepage"
+                >
+                  <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Show Banners</span>
+                </button>
+              )}
+            </>
+          )}
+
+          <button
+            onClick={openCreateModal}
+            className="px-4 py-2.5 rounded-xl bg-[#E8C477] text-[#21171A] font-bold text-xs hover:bg-[#FFF1CF] shadow-md flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Banner</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {banners.map((b) => (
-          <div key={b.id} className="rounded-2xl bg-[#21171A] border border-[#E8C477]/30 p-5 flex flex-col justify-between space-y-4 shadow-lg">
+          <div key={b.id} className={`rounded-2xl bg-[#21171A] border p-5 flex flex-col justify-between space-y-4 shadow-lg transition-all ${
+            b.isActive ? 'border-[#E8C477]/40' : 'border-gray-700 opacity-75'
+          }`}>
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-mono text-[#E8C477] font-bold px-2 py-0.5 rounded bg-[#2A171D] border border-[#E8C477]/20">
                   Order #{b.displayOrder}
                 </span>
-                {b.isActive ? (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
-                    Active
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 text-[10px]">
-                    Inactive
-                  </span>
-                )}
+
+                {/* DIRECT VISIBILITY TOGGLE BUTTON */}
+                <button
+                  onClick={() => handleToggleVisibility(b)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1.5 transition-all shadow-sm ${
+                    b.isActive
+                      ? 'bg-emerald-950/90 hover:bg-red-950 text-emerald-300 hover:text-red-300 border border-emerald-500/50'
+                      : 'bg-gray-800 hover:bg-emerald-950 text-gray-300 hover:text-emerald-300 border border-gray-600'
+                  }`}
+                  title={b.isActive ? 'Click to Hide this banner from Homepage' : 'Click to Make this banner Visible on Homepage'}
+                >
+                  {b.isActive ? (
+                    <>
+                      <Eye className="w-3 h-3 text-emerald-400" />
+                      <span>Visible (Click to Hide)</span>
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-3 h-3 text-amber-400" />
+                      <span>Hidden (Click to Show)</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               <h3 className="text-base font-black text-[#FFF4E3] mb-1">{b.title}</h3>

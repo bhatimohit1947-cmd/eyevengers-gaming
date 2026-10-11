@@ -7,7 +7,7 @@ import { GameCards } from '@/components/home/GameCards';
 import { Footer } from '@/components/layout/Footer';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
-import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
+import { getCloudUserPlaysCount, getCloudBanners } from '@/lib/db/supabaseSync';
 import { SHOWROOM_INFO } from '@/lib/theme';
 import { Glasses, Eye, ShieldCheck, MapPin, Award, CheckCircle2 } from 'lucide-react';
 import { MandalaMotif, ToranBorder, DandiyaIcon } from '@/components/ui/FestiveMotifs';
@@ -35,7 +35,19 @@ export default async function HomePage() {
 
   try {
     campaign = db.getActiveCampaign();
-    banners = db.getActiveBanners();
+    
+    // Check cloud banners for live visibility
+    const cloudBanners = await getCloudBanners(true);
+    if (cloudBanners && cloudBanners.length > 0) {
+      banners = cloudBanners;
+    } else {
+      const allCloud = await getCloudBanners(false);
+      if (allCloud && allCloud.length > 0) {
+        banners = []; // All cloud banners are explicitly hidden
+      } else {
+        banners = db.getActiveBanners();
+      }
+    }
     spinRemaining = campaign ? campaign.spinLimitPerUser : 1;
     boxRemaining = campaign ? campaign.boxLimitPerUser : 1;
 

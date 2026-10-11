@@ -16,10 +16,13 @@ import {
   ArrowRight,
   ShieldCheck,
   Gamepad2,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Image as ImageIcon
 } from 'lucide-react';
 import { DandiyaIcon } from '@/components/ui/FestiveMotifs';
-import { RedemptionRecord, Campaign } from '@/lib/types';
+import { RedemptionRecord, Campaign, Banner } from '@/lib/types';
 
 interface MetricsData {
   totalCustomers: number;
@@ -39,19 +42,43 @@ export default function AdminOverviewPage() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [recentRedemptions, setRecentRedemptions] = useState<RedemptionRecord[]>([]);
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadData = async () => {
     try {
-      const res = await fetch('/api/admin/metrics');
+      const [res, banRes] = await Promise.all([
+        fetch('/api/admin/metrics'),
+        fetch('/api/admin/banners'),
+      ]);
       const data = await res.json();
+      const banData = await banRes.json();
       if (data.metrics) setMetrics(data.metrics);
       if (data.recentRedemptions) setRecentRedemptions(data.recentRedemptions);
       if (data.activeCampaign) setActiveCampaign(data.activeCampaign);
+      if (banData.banners) setBanners(banData.banners);
     } catch {} finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleToggleBanners = async (enable: boolean) => {
+    try {
+      setBanners(prev => prev.map(b => ({ ...b, isActive: enable })));
+      await Promise.all(
+        banners.map(b =>
+          fetch(`/api/admin/banners/${b.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: enable }),
+          })
+        )
+      );
+      loadData();
+    } catch {
+      loadData();
     }
   };
 
@@ -154,6 +181,65 @@ export default function AdminOverviewPage() {
           </Link>
         </div>
       )}
+
+      {/* HOMEPAGE PROMOTIONAL BANNER QUICK CONTROLS */}
+      <div className="p-5 rounded-2xl bg-[#21171A] border border-[#E8C477]/30 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#E8C477] uppercase tracking-wider">
+              Homepage Promotional Banner
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+              banners.filter(b => b.isActive).length > 0
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40' 
+                : 'bg-red-950 text-red-300 border-red-500/40'
+            }`}>
+              {banners.filter(b => b.isActive).length > 0 
+                ? `${banners.filter(b => b.isActive).length} Banner(s) Visible` 
+                : 'Banner Hidden from Homepage'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-400">
+            {banners.filter(b => b.isActive).length > 0 
+              ? 'Promotional hero offer slider is currently active and visible to all visitors on the website.'
+              : 'The hero banner section is currently hidden from the website homepage.'}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {banners.length > 0 && (
+            <button
+              onClick={() => handleToggleBanners(banners.filter(b => b.isActive).length === 0)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
+                banners.filter(b => b.isActive).length > 0
+                  ? 'bg-[#2A171D] hover:bg-red-950 border border-amber-500/50 text-amber-300 hover:text-red-300'
+                  : 'bg-emerald-950 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300'
+              }`}
+              title={banners.filter(b => b.isActive).length > 0 ? 'Click to Hide Banners from Website' : 'Click to Show Banners on Website'}
+            >
+              {banners.filter(b => b.isActive).length > 0 ? (
+                <>
+                  <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Hide from Website</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Show on Website</span>
+                </>
+              )}
+            </button>
+          )}
+
+          <Link
+            href="/admin/banners"
+            className="px-4 py-2 rounded-xl bg-[#2A171D] border border-[#E8C477]/40 text-[#FFF4E3] font-bold text-xs hover:bg-[#681F2B]/40 transition-colors flex items-center gap-1.5"
+          >
+            <ImageIcon className="w-3.5 h-3.5 text-[#E8C477]" />
+            <span>Open Banner Builder ➔</span>
+          </Link>
+        </div>
+      </div>
 
       {/* METRIC STATS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
