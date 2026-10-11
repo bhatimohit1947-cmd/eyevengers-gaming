@@ -43,7 +43,7 @@ export function SpinWheelGame({
     fetch('/api/games/status')
       .then(res => res.json())
       .then(data => {
-        if (data.rewards?.spinWheel && initialRewards.length === 0) {
+        if (data.rewards?.spinWheel && data.rewards.spinWheel.length > 0) {
           setRewards(data.rewards.spinWheel);
         }
         if (data.plays) {
@@ -51,7 +51,7 @@ export function SpinWheelGame({
         }
       })
       .catch(() => {});
-  }, [initialRewards]);
+  }, []);
 
   // Draw the high-resolution canvas prize wheel
   useEffect(() => {

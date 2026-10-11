@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getCloudRewards, syncCloudRewardsToLocalDb, saveRewardToCloud } from '@/lib/db/supabaseSync';
 
 const rewardSchema = z.object({
   campaignId: z.string().min(1),
@@ -29,6 +30,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const campaignId = searchParams.get('campaignId') || undefined;
 
+  try {
+    await syncCloudRewardsToLocalDb(db.getRawDb());
+    const cloudRewards = await getCloudRewards(campaignId);
+    if (cloudRewards && cloudRewards.length > 0) {
+      return NextResponse.json({ rewards: cloudRewards });
+    }
+  } catch (err) {
+    console.warn('Cloud rewards fetch warning:', err);
+  }
+
   const rewards = db.getAllRewards(campaignId);
   return NextResponse.json({ rewards });
 }
@@ -47,6 +58,12 @@ export async function POST(req: Request) {
     }
 
     const reward = db.createReward(parsed.data);
+
+    try {
+      await saveRewardToCloud(reward);
+    } catch (e) {
+      console.warn('Cloud reward save error:', e);
+    }
 
     db.createAuditLog({
       adminId: session.id,

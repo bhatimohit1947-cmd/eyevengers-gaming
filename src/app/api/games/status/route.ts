@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
-import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
+import { getCloudUserPlaysCount, syncCloudRewardsToLocalDb, getCloudRewards } from '@/lib/db/supabaseSync';
 
 export async function GET() {
   try {
+    try {
+      await syncCloudRewardsToLocalDb(db.getRawDb());
+    } catch {}
+
     const campaign = db.getActiveCampaign();
     if (!campaign) {
       return NextResponse.json({
@@ -34,8 +38,18 @@ export async function GET() {
       boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);
     }
 
-    const spinRewards = db.getRewardsByCampaign(campaign.id, 'spin_wheel');
-    const boxRewards = db.getRewardsByCampaign(campaign.id, 'mystery_box');
+    let spinRewards = db.getRewardsByCampaign(campaign.id, 'spin_wheel');
+    let boxRewards = db.getRewardsByCampaign(campaign.id, 'mystery_box');
+
+    try {
+      const allCloud = await getCloudRewards(campaign.id);
+      if (allCloud && allCloud.length > 0) {
+        const cloudSpin = allCloud.filter(r => r.isActive && (r.applicableGame === 'spin_wheel' || r.applicableGame === 'both'));
+        const cloudBox = allCloud.filter(r => r.isActive && (r.applicableGame === 'mystery_box' || r.applicableGame === 'both'));
+        if (cloudSpin.length > 0) spinRewards = cloudSpin;
+        if (cloudBox.length > 0) boxRewards = cloudBox;
+      }
+    } catch {}
 
     return NextResponse.json({
       active: true,

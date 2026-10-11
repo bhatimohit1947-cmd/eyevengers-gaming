@@ -626,3 +626,164 @@ export async function toggleAllCloudBanners(isActive: boolean) {
   }
 }
 
+export async function getCloudRewards(campaignId?: string): Promise<any[]> {
+  const client = getSupabase();
+  if (!client) return [];
+
+  try {
+    let query = client.from('rewards').select('*').order('created_at', { ascending: true });
+    if (campaignId) {
+      query = query.eq('campaign_id', campaignId);
+    }
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(r => ({
+      id: r.id,
+      campaignId: r.campaign_id,
+      name: r.name,
+      description: r.description || '',
+      rewardType: r.reward_type,
+      monetaryValuePaise: Number(r.monetary_value_paise || 0),
+      discountPercentage: Number(r.discount_percentage || 0),
+      minPurchasePaise: Number(r.min_purchase_paise || 0),
+      maxDiscountPaise: Number(r.max_discount_paise || 0),
+      totalInventory: Number(r.total_inventory || 0),
+      reservedInventory: Number(r.reserved_inventory || 0),
+      issuedCount: Number(r.issued_count || 0),
+      redeemedCount: Number(r.redeemed_count || 0),
+      probabilityPercent: Number(r.probability_percent || 0),
+      isActive: !!r.is_active,
+      applicableGame: r.applicable_game,
+      terms: r.terms || '',
+      color: r.color || '#E8C477',
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function syncCloudRewardsToLocalDb(database: any) {
+  const client = getSupabase();
+  if (!client || !database) return;
+
+  try {
+    const { data, error } = await client.from('rewards').select('*');
+    if (error || !data || data.length === 0) return;
+
+    const stmt = database.prepare(`
+      INSERT OR REPLACE INTO rewards (
+        id, campaign_id, name, description, reward_type, monetary_value_paise,
+        discount_percentage, min_purchase_paise, max_discount_paise, total_inventory,
+        reserved_inventory, issued_count, redeemed_count, probability_percent, is_active,
+        applicable_game, terms, color, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const r of data) {
+      stmt.run(
+        r.id,
+        r.campaign_id,
+        r.name,
+        r.description || '',
+        r.reward_type,
+        Number(r.monetary_value_paise || 0),
+        Number(r.discount_percentage || 0),
+        Number(r.min_purchase_paise || 0),
+        Number(r.max_discount_paise || 0),
+        Number(r.total_inventory || 0),
+        Number(r.reserved_inventory || 0),
+        Number(r.issued_count || 0),
+        Number(r.redeemed_count || 0),
+        Number(r.probability_percent || 0),
+        r.is_active ? 1 : 0,
+        r.applicable_game,
+        r.terms || '',
+        r.color || '#E8C477',
+        r.created_at,
+        r.updated_at
+      );
+    }
+  } catch (err) {
+    console.warn('Sync cloud rewards to local db error:', err);
+  }
+}
+
+export async function updateCloudReward(id: string, updates: Partial<any>) {
+  const client = getSupabase();
+  if (!client) return;
+
+  try {
+    const REWARD_ID_MAP: Record<string, string> = {
+      'rew-001': '33333333-3333-3333-3333-000000000001',
+      'rew-002': '33333333-3333-3333-3333-000000000002',
+      'rew-003': '33333333-3333-3333-3333-000000000003',
+      'rew-004': '33333333-3333-3333-3333-000000000004',
+      'rew-005': '33333333-3333-3333-3333-000000000005',
+      'rew-006': '33333333-3333-3333-3333-000000000006',
+    };
+
+    const targetId = REWARD_ID_MAP[id] || id;
+
+    const patch: any = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.name !== undefined) patch.name = updates.name;
+    if (updates.description !== undefined) patch.description = updates.description;
+    if (updates.rewardType !== undefined) patch.reward_type = updates.rewardType;
+    if (updates.monetaryValuePaise !== undefined) patch.monetary_value_paise = updates.monetaryValuePaise;
+    if (updates.discountPercentage !== undefined) patch.discount_percentage = updates.discountPercentage;
+    if (updates.minPurchasePaise !== undefined) patch.min_purchase_paise = updates.minPurchasePaise;
+    if (updates.maxDiscountPaise !== undefined) patch.max_discount_paise = updates.maxDiscountPaise;
+    if (updates.totalInventory !== undefined) patch.total_inventory = updates.totalInventory;
+    if (updates.probabilityPercent !== undefined) patch.probability_percent = updates.probabilityPercent;
+    if (updates.isActive !== undefined) patch.is_active = updates.isActive;
+    if (updates.applicableGame !== undefined) patch.applicable_game = updates.applicableGame;
+    if (updates.terms !== undefined) patch.terms = updates.terms;
+    if (updates.color !== undefined) patch.color = updates.color;
+
+    await client.from('rewards').update(patch).eq('id', targetId);
+  } catch (err) {
+    console.warn('Update cloud reward error:', err);
+  }
+}
+
+export async function saveRewardToCloud(reward: any) {
+  const client = getSupabase();
+  if (!client) return;
+
+  try {
+    let cleanId = reward.id;
+    if (cleanId.startsWith('rew-')) {
+      cleanId = cleanId.replace(/^rew-/, '');
+    }
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(cleanId)) {
+      cleanId = crypto.randomUUID();
+    }
+
+    await client.from('rewards').upsert({
+      id: cleanId,
+      campaign_id: reward.campaignId || '11111111-1111-1111-1111-111111111111',
+      name: reward.name,
+      description: reward.description || '',
+      reward_type: reward.rewardType,
+      monetary_value_paise: reward.monetaryValuePaise,
+      discount_percentage: reward.discountPercentage,
+      min_purchase_paise: reward.minPurchasePaise,
+      max_discount_paise: reward.maxDiscountPaise,
+      total_inventory: reward.totalInventory,
+      probability_percent: reward.probabilityPercent,
+      is_active: reward.isActive,
+      applicable_game: reward.applicableGame,
+      terms: reward.terms,
+      color: reward.color,
+      created_at: reward.createdAt || new Date().toISOString(),
+      updated_at: reward.updatedAt || new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('Save reward to cloud error:', err);
+  }
+}
+

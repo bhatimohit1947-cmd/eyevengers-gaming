@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 import { SpinWheelGame } from '@/components/games/SpinWheelGame';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
-import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
+import { getCloudUserPlaysCount, syncCloudRewardsToLocalDb, getCloudRewards } from '@/lib/db/supabaseSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,11 +13,23 @@ export default async function SpinWheelPage() {
   let spinRemaining = 1;
 
   try {
+    try {
+      await syncCloudRewardsToLocalDb(db.getRawDb());
+    } catch {}
+
     const campaign = db.getActiveCampaign();
     const session = await getSession();
 
     if (campaign) {
-      const rawRewards = db.getRewardsByCampaign(campaign.id, 'spin_wheel');
+      let rawRewards = db.getRewardsByCampaign(campaign.id, 'spin_wheel');
+      try {
+        const cloudRewards = await getCloudRewards(campaign.id);
+        const filteredCloud = cloudRewards.filter(r => r.isActive && (r.applicableGame === 'spin_wheel' || r.applicableGame === 'both'));
+        if (filteredCloud.length > 0) {
+          rawRewards = filteredCloud;
+        }
+      } catch {}
+
       spinRewards = rawRewards.map(r => ({
         id: r.id,
         name: r.name,

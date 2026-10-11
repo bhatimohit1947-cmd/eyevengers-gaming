@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { updateCloudReward } from '@/lib/db/supabaseSync';
 
 export async function PUT(
   req: Request,
@@ -14,9 +15,26 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const updated = db.updateReward(id, body);
-    if (!updated) {
-      return NextResponse.json({ error: 'Reward not found' }, { status: 404 });
+    let updated = db.updateReward(id, body);
+    
+    // Also try updating via mapped IDs if necessary
+    const REWARD_MAP_REVERSE: Record<string, string> = {
+      '33333333-3333-3333-3333-000000000001': 'rew-001',
+      '33333333-3333-3333-3333-000000000002': 'rew-002',
+      '33333333-3333-3333-3333-000000000003': 'rew-003',
+      '33333333-3333-3333-3333-000000000004': 'rew-004',
+      '33333333-3333-3333-3333-000000000005': 'rew-005',
+      '33333333-3333-3333-3333-000000000006': 'rew-006',
+    };
+    if (!updated && REWARD_MAP_REVERSE[id]) {
+      updated = db.updateReward(REWARD_MAP_REVERSE[id], body);
+    }
+
+    // Persist to Supabase cloud immediately
+    try {
+      await updateCloudReward(id, body);
+    } catch (e) {
+      console.warn('Cloud reward update error:', e);
     }
 
     db.createAuditLog({

@@ -3,7 +3,13 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { allocateReward } from '@/lib/rewards/engine';
-import { saveVoucherToCloud, saveGamePlayToCloud, getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
+import { 
+  saveVoucherToCloud, 
+  saveGamePlayToCloud, 
+  getCloudUserPlaysCount, 
+  syncCloudRewardsToLocalDb, 
+  getCloudRewards 
+} from '@/lib/db/supabaseSync';
 
 import { checkRateLimit, acquirePlayLock, releasePlayLock } from '@/lib/security/rateLimit';
 
@@ -75,8 +81,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Get eligible rewards
-    const candidateRewards = db.getRewardsByCampaign(campaign.id, gameType);
+    // 3. Get eligible rewards (syncing live cloud rewards from Supabase)
+    try {
+      await syncCloudRewardsToLocalDb(db.getRawDb());
+    } catch {}
+
+    let candidateRewards = db.getRewardsByCampaign(campaign.id, gameType);
+    try {
+      const allCloud = await getCloudRewards(campaign.id);
+      if (allCloud && allCloud.length > 0) {
+        const filtered = allCloud.filter(r => r.isActive && (r.applicableGame === gameType || r.applicableGame === 'both'));
+        if (filtered.length > 0) {
+          candidateRewards = filtered;
+        }
+      }
+    } catch {}
+
     if (candidateRewards.length === 0) {
       return NextResponse.json(
         { error: 'No active rewards are configured for this game.' },
@@ -84,7 +104,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Server-Side Reward Allocation
+    // 4. Server-Side Reward Allocation using updated winning odds
     const allocation = allocateReward(candidateRewards, 'weighted_random');
     if (!allocation) {
       return NextResponse.json(
