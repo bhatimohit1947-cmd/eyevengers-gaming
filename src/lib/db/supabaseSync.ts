@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 import { UserProfile } from '../types';
 
 let supabaseClient: SupabaseClient | null = null;
