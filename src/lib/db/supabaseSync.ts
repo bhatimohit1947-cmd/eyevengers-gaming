@@ -35,12 +35,24 @@ export async function saveProfileToCloud(profile: {
   updatedAt?: string;
 }) {
   const client = getSupabase();
-  if (!client) return;
+  if (!client) {
+    console.warn('[Supabase] Warning: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured.');
+    return;
+  }
 
   try {
-    await client.from('profiles').upsert(
+    let cleanId = profile.id;
+    if (cleanId.startsWith('usr-') || cleanId.startsWith('adm-') || cleanId.startsWith('stf-')) {
+      cleanId = cleanId.replace(/^(usr-|adm-|stf-)/, '');
+    }
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(cleanId)) {
+      cleanId = crypto.randomUUID();
+    }
+
+    const { error } = await client.from('profiles').upsert(
       {
-        id: profile.id,
+        id: cleanId,
         mobile: profile.mobile,
         full_name: profile.fullName,
         password_hash: profile.passwordHash,
@@ -49,10 +61,13 @@ export async function saveProfileToCloud(profile: {
         created_at: profile.createdAt || new Date().toISOString(),
         updated_at: profile.updatedAt || new Date().toISOString(),
       },
-      { onConflict: 'id' }
+      { onConflict: 'mobile' }
     );
+    if (error) {
+      console.error('[Supabase] Cloud profile upsert failed:', error.message);
+    }
   } catch (err) {
-    console.warn('Cloud profile sync warning:', err);
+    console.warn('[Supabase] Cloud profile sync warning:', err);
   }
 }
 
@@ -205,6 +220,7 @@ export async function syncCloudProfilesToLocalDb(database: any) {
     const { data, error } = await client.from('profiles').select('*');
     if (error || !data || data.length === 0) return;
 
+    const delStmt = database.prepare('DELETE FROM profiles WHERE mobile = ? AND id != ?');
     const stmt = database.prepare(`
       INSERT OR REPLACE INTO profiles (id, mobile, full_name, password_hash, role, status, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -212,6 +228,7 @@ export async function syncCloudProfilesToLocalDb(database: any) {
 
     for (const p of data) {
       try {
+        delStmt.run(p.mobile, p.id);
         stmt.run(
           p.id,
           p.mobile,
