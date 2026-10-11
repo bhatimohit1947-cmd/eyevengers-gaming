@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { redeemCloudVoucher } from '@/lib/db/supabaseSync';
 
 const redeemSchema = z.object({
   voucherId: z.string().min(1, 'Voucher ID is required'),
@@ -48,6 +49,17 @@ export async function POST(req: Request) {
       targetId: result.voucher.voucherCode,
       details: `Redeemed by ${session.fullName}. Bill: ${billReference || 'N/A'}, Amount: ₹${purchaseAmount || 0}`,
     });
+
+    try {
+      await redeemCloudVoucher(
+        result.voucher.id,
+        session.id,
+        billReference,
+        purchaseAmountPaise
+      );
+    } catch (err) {
+      console.warn('Cloud voucher redemption error:', err);
+    }
 
     return NextResponse.json({
       success: true,

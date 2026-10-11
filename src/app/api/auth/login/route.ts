@@ -29,10 +29,8 @@ export async function POST(req: Request) {
       try {
         db.saveUserLocally(cloudUser as any);
       } catch {}
-      // If no local user or cloud user is newer, use cloudUser
-      if (!user) {
-        user = cloudUser;
-      }
+      // Cloud user UUID is the single source of truth across all devices and servers
+      user = cloudUser;
     }
 
     if (!user) {

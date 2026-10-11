@@ -31,7 +31,7 @@ export default async function SpinWheelPage() {
       if (session) {
         const [localSpin, cloudSpin] = await Promise.all([
           db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile),
-          getCloudUserPlaysCount(session.id, 'spin_wheel'),
+          getCloudUserPlaysCount(session.id, 'spin_wheel', session.mobile),
         ]);
         const spinCount = Math.max(localSpin, cloudSpin);
         spinRemaining = Math.max(0, campaign.spinLimitPerUser - spinCount);

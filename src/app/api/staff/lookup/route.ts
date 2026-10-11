@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getCloudVoucherByCodeOrToken } from '@/lib/db/supabaseSync';
 
 export async function GET(req: Request) {
   try {
@@ -17,7 +18,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Please provide voucher code or QR token' }, { status: 400 });
     }
 
-    const voucher = token ? db.getVoucherByQrToken(token) : db.getVoucherByCode(code!);
+    let voucher = token ? db.getVoucherByQrToken(token) : db.getVoucherByCode(code!);
+    if (!voucher) {
+      voucher = await getCloudVoucherByCodeOrToken(token || code!);
+    }
     if (!voucher) {
       return NextResponse.json({ error: 'No voucher found matching the code or QR token.' }, { status: 404 });
     }

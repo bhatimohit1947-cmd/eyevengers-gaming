@@ -179,12 +179,35 @@ export function toCloudUUID(val?: string): string {
   if (uuidRegex.test(clean)) return clean;
   if (REWARD_MAP[val]) return REWARD_MAP[val];
   if (val.startsWith('cmp-')) return DEFAULT_CLOUD_CAMPAIGN_ID;
-  return crypto.randomUUID();
+
+  // Deterministic MD5 hash formatted as standard UUIDv4 (the same input ALWAYS produces the same UUID)
+  const hash = crypto.createHash('md5').update(val).digest('hex');
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+}
+
+export async function getCloudUserIdByMobileOrId(userId: string, mobile?: string): Promise<string> {
+  const client = getSupabase();
+  if (!client) return toCloudUUID(userId);
+
+  // If mobile is available, look up the permanent Supabase profile UUID
+  if (mobile) {
+    try {
+      const { data } = await client.from('profiles').select('id').eq('mobile', mobile).maybeSingle();
+      if (data?.id) return data.id;
+    } catch {}
+  }
+
+  // If userId is already a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(userId)) return userId;
+
+  return toCloudUUID(userId);
 }
 
 export async function saveVoucherToCloud(voucher: {
   id: string;
   userId: string;
+  userMobile?: string;
   campaignId: string;
   rewardId: string;
   voucherCode: string;
@@ -192,17 +215,17 @@ export async function saveVoucherToCloud(voucher: {
   status: string;
   expiryDate: string;
   createdAt: string;
-  updatedAt?: string;
 }) {
   const client = getSupabase();
   if (!client) return;
 
   try {
     const vchId = toCloudUUID(voucher.id);
-    const userId = toCloudUUID(voucher.userId);
+    const userId = await getCloudUserIdByMobileOrId(voucher.userId, voucher.userMobile);
     const campaignId = toCloudUUID(voucher.campaignId);
     const rewardId = REWARD_MAP[voucher.rewardId] || toCloudUUID(voucher.rewardId);
 
+    // Note: 'vouchers' table in Supabase does NOT have 'updated_at', it uses issue_date and created_at
     const { error } = await client.from('vouchers').upsert(
       {
         id: vchId,
@@ -211,15 +234,17 @@ export async function saveVoucherToCloud(voucher: {
         reward_id: rewardId,
         voucher_code: voucher.voucherCode,
         qr_token: voucher.qrToken,
-        status: voucher.status,
+        status: voucher.status || 'issued',
+        issue_date: voucher.createdAt || new Date().toISOString(),
         expiry_date: voucher.expiryDate,
-        created_at: voucher.createdAt,
-        updated_at: voucher.updatedAt || voucher.createdAt,
+        created_at: voucher.createdAt || new Date().toISOString(),
       },
       { onConflict: 'id' }
     );
     if (error) {
       console.error('[Supabase] Cloud voucher sync error:', error.message);
+    } else {
+      console.log(`[Supabase] Successfully saved voucher ${voucher.voucherCode} for user ${userId}`);
     }
   } catch (err) {
     console.warn('Cloud voucher sync warning:', err);
@@ -229,6 +254,7 @@ export async function saveVoucherToCloud(voucher: {
 export async function saveGamePlayToCloud(gamePlay: {
   id: string;
   userId: string;
+  userMobile?: string;
   campaignId: string;
   gameType: string;
   rewardId: string;
@@ -240,7 +266,7 @@ export async function saveGamePlayToCloud(gamePlay: {
 
   try {
     const gplId = toCloudUUID(gamePlay.id);
-    const userId = toCloudUUID(gamePlay.userId);
+    const userId = await getCloudUserIdByMobileOrId(gamePlay.userId, gamePlay.userMobile);
     const campaignId = toCloudUUID(gamePlay.campaignId);
     const rewardId = REWARD_MAP[gamePlay.rewardId] || toCloudUUID(gamePlay.rewardId);
 
@@ -258,18 +284,20 @@ export async function saveGamePlayToCloud(gamePlay: {
     );
     if (error) {
       console.error('[Supabase] Cloud game play sync error:', error.message);
+    } else {
+      console.log(`[Supabase] Recorded ${gamePlay.gameType} for user ${userId}`);
     }
   } catch (err) {
     console.warn('Cloud game play sync warning:', err);
   }
 }
 
-export async function getCloudUserPlaysCount(userId: string, gameType: string): Promise<number> {
+export async function getCloudUserPlaysCount(userId: string, gameType: string, userMobile?: string): Promise<number> {
   const client = getSupabase();
   if (!client) return 0;
 
   try {
-    const uid = toCloudUUID(userId);
+    const uid = await getCloudUserIdByMobileOrId(userId, userMobile);
     const { count, error } = await client
       .from('game_plays')
       .select('*', { count: 'exact', head: true })
@@ -286,12 +314,12 @@ export async function getCloudUserPlaysCount(userId: string, gameType: string): 
   }
 }
 
-export async function getCloudUserVouchers(userId: string): Promise<any[]> {
+export async function getCloudUserVouchers(userId: string, userMobile?: string): Promise<any[]> {
   const client = getSupabase();
   if (!client) return [];
 
   try {
-    const uid = toCloudUUID(userId);
+    const uid = await getCloudUserIdByMobileOrId(userId, userMobile);
     const { data, error } = await client
       .from('vouchers')
       .select('*, rewards(*)')
@@ -319,12 +347,14 @@ export async function getCloudUserVouchers(userId: string): Promise<any[]> {
         userId: v.user_id,
         rewardId: REWARD_REVERSE_MAP[v.reward_id] || v.reward_id,
         campaignId: v.campaign_id,
-        issueDate: v.created_at,
+        issueDate: v.issue_date || v.created_at,
         expiryDate: v.expiry_date,
         status: v.status,
         qrToken: v.qr_token,
         redeemedAt: v.redeemed_at,
         redeemedByStaffId: v.redeemed_by_staff_id,
+        billReference: v.bill_reference,
+        purchaseAmountPaise: v.purchase_amount_paise,
         createdAt: v.created_at,
         rewardName: reward?.name || 'Festive Reward',
         rewardType: reward?.reward_type || 'fixed_discount',
@@ -332,11 +362,163 @@ export async function getCloudUserVouchers(userId: string): Promise<any[]> {
         minPurchasePaise: reward?.min_purchase_paise || 0,
         terms: reward?.terms || '',
         customerName: 'Valued Customer',
-        customerMobile: '',
+        customerMobile: userMobile || '',
       };
     });
   } catch {
     return [];
+  }
+}
+
+export async function getAllCloudVouchers(): Promise<any[]> {
+  const client = getSupabase();
+  if (!client) return [];
+
+  try {
+    const { data, error } = await client
+      .from('vouchers')
+      .select('*, customer:profiles!user_id(id, full_name, mobile), rewards(*)')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      console.warn('Fetch all cloud vouchers error:', error?.message);
+      return [];
+    }
+
+    return data.map(v => {
+      const reward = v.rewards;
+      const customer = v.customer;
+      const monetaryPaise = reward?.monetary_value_paise || 0;
+      const discountPct = reward?.discount_percentage || 0;
+      let rewardValueDisplay = '';
+      if (monetaryPaise > 0) {
+        rewardValueDisplay = `₹${(monetaryPaise / 100).toLocaleString('en-IN')}`;
+      } else if (discountPct > 0) {
+        rewardValueDisplay = `${discountPct}% OFF`;
+      } else {
+        rewardValueDisplay = reward?.name || 'Festive Reward';
+      }
+
+      return {
+        id: v.id,
+        voucherCode: v.voucher_code,
+        userId: v.user_id,
+        rewardId: REWARD_REVERSE_MAP[v.reward_id] || v.reward_id,
+        campaignId: v.campaign_id,
+        issueDate: v.issue_date || v.created_at,
+        expiryDate: v.expiry_date,
+        status: v.status,
+        qrToken: v.qr_token,
+        redeemedAt: v.redeemed_at,
+        redeemedByStaffId: v.redeemed_by_staff_id,
+        billReference: v.bill_reference,
+        purchaseAmountPaise: v.purchase_amount_paise,
+        createdAt: v.created_at,
+        rewardName: reward?.name || 'Festive Reward',
+        rewardType: reward?.reward_type || 'fixed_discount',
+        rewardValueDisplay,
+        minPurchasePaise: reward?.min_purchase_paise || 0,
+        terms: reward?.terms || '',
+        customerName: customer?.full_name || 'Valued Customer',
+        customerMobile: customer?.mobile || '',
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getCloudVoucherByCodeOrToken(codeOrToken: string): Promise<any | null> {
+  const client = getSupabase();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('vouchers')
+      .select('*, customer:profiles!user_id(id, full_name, mobile), rewards(*)')
+      .or(`voucher_code.eq.${codeOrToken},qr_token.eq.${codeOrToken}`)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const reward = data.rewards;
+    const customer = data.customer;
+    const monetaryPaise = reward?.monetary_value_paise || 0;
+    const discountPct = reward?.discount_percentage || 0;
+    let rewardValueDisplay = '';
+    if (monetaryPaise > 0) {
+      rewardValueDisplay = `₹${(monetaryPaise / 100).toLocaleString('en-IN')}`;
+    } else if (discountPct > 0) {
+      rewardValueDisplay = `${discountPct}% OFF`;
+    } else {
+      rewardValueDisplay = reward?.name || 'Festive Reward';
+    }
+
+    return {
+      id: data.id,
+      voucherCode: data.voucher_code,
+      userId: data.user_id,
+      rewardId: REWARD_REVERSE_MAP[data.reward_id] || data.reward_id,
+      campaignId: data.campaign_id,
+      issueDate: data.issue_date || data.created_at,
+      expiryDate: data.expiry_date,
+      status: data.status,
+      qrToken: data.qr_token,
+      redeemedAt: data.redeemed_at,
+      redeemedByStaffId: data.redeemed_by_staff_id,
+      billReference: data.bill_reference,
+      purchaseAmountPaise: data.purchase_amount_paise,
+      createdAt: data.created_at,
+      rewardName: reward?.name || 'Festive Reward',
+      rewardType: reward?.reward_type || 'fixed_discount',
+      rewardValueDisplay,
+      minPurchasePaise: reward?.min_purchase_paise || 0,
+      terms: reward?.terms || '',
+      customerName: customer?.full_name || 'Valued Customer',
+      customerMobile: customer?.mobile || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function redeemCloudVoucher(
+  voucherId: string,
+  staffId: string,
+  billReference?: string,
+  purchaseAmountPaise?: number
+) {
+  const client = getSupabase();
+  if (!client) return;
+
+  try {
+    const vchId = toCloudUUID(voucherId);
+    const stfId = toCloudUUID(staffId);
+    const now = new Date().toISOString();
+
+    await client
+      .from('vouchers')
+      .update({
+        status: 'redeemed',
+        redeemed_at: now,
+        redeemed_by_staff_id: stfId,
+        bill_reference: billReference || null,
+        purchase_amount_paise: purchaseAmountPaise || null,
+      })
+      .eq('id', vchId);
+
+    // Also record in redemptions table
+    await client.from('redemptions').insert({
+      id: crypto.randomUUID(),
+      voucher_id: vchId,
+      staff_id: stfId,
+      bill_reference: billReference || null,
+      purchase_amount_paise: purchaseAmountPaise || 0,
+      discount_applied_paise: 0,
+      redeemed_at: now,
+    });
+  } catch (err) {
+    console.warn('Cloud voucher redemption sync error:', err);
   }
 }
 

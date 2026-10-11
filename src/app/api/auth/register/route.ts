@@ -50,7 +50,9 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await hashPassword(password);
+    const userId = crypto.randomUUID();
     const newUser = db.createUser({
+      id: userId,
       mobile: normalizedMobile,
       fullName: fullName.trim(),
       passwordHash,

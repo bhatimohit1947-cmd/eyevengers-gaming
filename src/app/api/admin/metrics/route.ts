@@ -18,16 +18,24 @@ export async function GET() {
     const recentRedemptions = db.getRecentRedemptions(8);
     const activeCampaign = db.getActiveCampaign();
 
-    // Query Supabase cloud count to guarantee customer count is accurate across serverless containers
+    // Query Supabase cloud counts to guarantee metrics are accurate across serverless containers
     try {
       const client = getSupabase();
       if (client) {
-        const { count, error } = await client
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('role', 'customer');
-        if (count !== null && count !== undefined && !error) {
-          metrics.totalCustomers = Math.max(metrics.totalCustomers, count);
+        const [profRes, vchRes, playsRes] = await Promise.all([
+          client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'customer'),
+          client.from('vouchers').select('*', { count: 'exact', head: true }),
+          client.from('game_plays').select('*', { count: 'exact', head: true }),
+        ]);
+
+        if (profRes.count !== null && profRes.count !== undefined) {
+          metrics.totalCustomers = Math.max(metrics.totalCustomers, profRes.count);
+        }
+        if (vchRes.count !== null && vchRes.count !== undefined) {
+          metrics.vouchersIssued = Math.max(metrics.vouchersIssued, vchRes.count);
+        }
+        if (playsRes.count !== null && playsRes.count !== undefined) {
+          metrics.totalPlays = Math.max(metrics.totalPlays, playsRes.count);
         }
       }
     } catch {}

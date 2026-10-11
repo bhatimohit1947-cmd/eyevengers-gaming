@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     // 2. Check play limits (both local SQLite and Supabase cloud to prevent multi-device bypass)
     const allowedLimit = gameType === 'spin_wheel' ? campaign.spinLimitPerUser : campaign.boxLimitPerUser;
     const localPlays = db.getUserPlaysCount(session.id, campaign.id, gameType, session.mobile);
-    const cloudPlays = await getCloudUserPlaysCount(session.id, gameType);
+    const cloudPlays = await getCloudUserPlaysCount(session.id, gameType, session.mobile);
     const currentPlays = Math.max(localPlays, cloudPlays);
 
     if (currentPlays >= allowedLimit) {
@@ -94,6 +94,7 @@ export async function POST(req: Request) {
         saveVoucherToCloud({
           id: result.voucher.id,
           userId: result.voucher.userId,
+          userMobile: session.mobile,
           campaignId: result.voucher.campaignId,
           rewardId: result.voucher.rewardId,
           voucherCode: result.voucher.voucherCode,
@@ -101,11 +102,11 @@ export async function POST(req: Request) {
           status: result.voucher.status,
           expiryDate: result.voucher.expiryDate,
           createdAt: result.voucher.createdAt,
-          updatedAt: result.voucher.createdAt,
         }),
         saveGamePlayToCloud({
           id: result.gamePlay.id,
           userId: session.id,
+          userMobile: session.mobile,
           campaignId: campaign.id,
           gameType,
           rewardId: allocation.reward.id,

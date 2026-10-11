@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const localVouchers = db.getUserVouchers(session.id, session.mobile);
-    const cloudVouchers = await getCloudUserVouchers(session.id);
+    const cloudVouchers = await getCloudUserVouchers(session.id, session.mobile);
 
     // Merge by voucherCode or id so vouchers are NEVER lost across serverless containers
     const map = new Map<string, any>();

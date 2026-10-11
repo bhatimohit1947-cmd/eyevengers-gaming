@@ -24,7 +24,7 @@ export default async function MysteryBoxesPage() {
       if (session) {
         const [localBox, cloudBox] = await Promise.all([
           db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile),
-          getCloudUserPlaysCount(session.id, 'mystery_box'),
+          getCloudUserPlaysCount(session.id, 'mystery_box', session.mobile),
         ]);
         const boxCount = Math.max(localBox, cloudBox);
         boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);

@@ -43,8 +43,8 @@ export default async function HomePage() {
       const [localSpin, localBox, cloudSpin, cloudBox] = await Promise.all([
         db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile),
         db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile),
-        getCloudUserPlaysCount(session.id, 'spin_wheel'),
-        getCloudUserPlaysCount(session.id, 'mystery_box'),
+        getCloudUserPlaysCount(session.id, 'spin_wheel', session.mobile),
+        getCloudUserPlaysCount(session.id, 'mystery_box', session.mobile),
       ]);
       const spinCount = Math.max(localSpin, cloudSpin);
       const boxCount = Math.max(localBox, cloudBox);
