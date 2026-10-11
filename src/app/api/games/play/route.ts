@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
     // 2. Check play limits
     const allowedLimit = gameType === 'spin_wheel' ? campaign.spinLimitPerUser : campaign.boxLimitPerUser;
-    const currentPlays = db.getUserPlaysCount(session.id, campaign.id, gameType);
+    const currentPlays = db.getUserPlaysCount(session.id, campaign.id, gameType, session.mobile);
 
     if (currentPlays >= allowedLimit) {
       return NextResponse.json(
@@ -73,6 +73,8 @@ export async function POST(req: Request) {
     // 5. Atomic Transaction: record play, decrement stock, issue voucher
     const result = db.recordPlayAndIssueVoucher({
       userId: session.id,
+      userMobile: session.mobile,
+      userName: session.fullName,
       campaignId: campaign.id,
       gameType,
       rewardId: allocation.reward.id,

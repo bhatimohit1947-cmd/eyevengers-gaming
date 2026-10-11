@@ -18,8 +18,8 @@ export async function GET() {
     let userPlays = { spinWheel: 0, mysteryBox: 0 };
 
     if (session) {
-      const spinCount = db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel');
-      const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box');
+      const spinCount = db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile);
+      const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile);
       userPlays = { spinWheel: spinCount, mysteryBox: boxCount };
       spinRemaining = Math.max(0, campaign.spinLimitPerUser - spinCount);
       boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);

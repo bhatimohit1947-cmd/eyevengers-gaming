@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const vouchers = db.getUserVouchers(session.id);
+    const vouchers = db.getUserVouchers(session.id, session.mobile);
     return NextResponse.json({ vouchers });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Server error';
