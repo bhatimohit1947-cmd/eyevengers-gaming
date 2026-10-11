@@ -5,6 +5,8 @@ import { normalizeMobile, isValidIndianMobile, hashPassword } from '@/lib/auth/p
 import { setSessionCookie } from '@/lib/auth/session';
 import { saveProfileToCloud, getProfileFromCloudByMobile } from '@/lib/db/supabaseSync';
 
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
+
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   mobile: z.string().min(10, 'Valid 10-digit mobile number required'),
@@ -14,6 +16,15 @@ const registerSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const ipLimit = checkRateLimit(`register:ip:${ip}`, 8, 10 * 60 * 1000); // 8 accounts per 10 mins per IP
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many registration requests. Please wait a few minutes before trying again.' },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const parsed = registerSchema.safeParse(body);
 

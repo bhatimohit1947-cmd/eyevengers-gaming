@@ -5,18 +5,38 @@ import { getSession } from '@/lib/auth/session';
 import { allocateReward } from '@/lib/rewards/engine';
 import { saveVoucherToCloud, saveGamePlayToCloud, getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
 
+import { checkRateLimit, acquirePlayLock, releasePlayLock } from '@/lib/security/rateLimit';
+
 const playSchema = z.object({
   gameType: z.enum(['spin_wheel', 'mystery_box']),
   boxIndex: z.number().optional(), // box chosen in mystery box
 });
 
 export async function POST(req: Request) {
+  let session = null;
   try {
-    const session = await getSession();
+    session = await getSession();
     if (!session) {
       return NextResponse.json(
         { error: 'Please log in to play and receive your festive reward.' },
         { status: 401 }
+      );
+    }
+
+    // Rate Limit: Max 5 plays per minute per user account
+    const rateLimit = checkRateLimit(`play:${session.id}`, 5, 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment before playing again.' },
+        { status: 429 }
+      );
+    }
+
+    // Concurrency Lock: Prevent parallel/race condition voucher duplication
+    if (!acquirePlayLock(session.id)) {
+      return NextResponse.json(
+        { error: 'A game play is already in progress for your account. Please wait.' },
+        { status: 429 }
       );
     }
 
@@ -146,5 +166,9 @@ export async function POST(req: Request) {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Server error occurred';
     return NextResponse.json({ error: message }, { status: 500 });
+  } finally {
+    if (session) {
+      releasePlayLock(session.id);
+    }
   }
 }

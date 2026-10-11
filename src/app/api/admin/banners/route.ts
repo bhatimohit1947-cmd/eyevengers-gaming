@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getCloudBanners } from '@/lib/db/supabaseSync';
 
 const bannerSchema = z.object({
   title: z.string().min(2),
@@ -21,6 +22,13 @@ export async function GET() {
   if (!session || session.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
+
+  try {
+    const cloudBanners = await getCloudBanners(false);
+    if (cloudBanners && cloudBanners.length > 0) {
+      return NextResponse.json({ banners: cloudBanners });
+    }
+  } catch {}
 
   const banners = db.getAllBanners();
   return NextResponse.json({ banners });

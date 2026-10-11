@@ -67,15 +67,11 @@ export default function AdminOverviewPage() {
   const handleToggleBanners = async (enable: boolean) => {
     try {
       setBanners(prev => prev.map(b => ({ ...b, isActive: enable })));
-      await Promise.all(
-        banners.map(b =>
-          fetch(`/api/admin/banners/${b.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isActive: enable }),
-          })
-        )
-      );
+      await fetch('/api/admin/banners/toggle-visibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: enable }),
+      });
       loadData();
     } catch {
       loadData();

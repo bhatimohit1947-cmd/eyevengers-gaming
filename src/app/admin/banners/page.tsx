@@ -53,15 +53,11 @@ export default function AdminBannersPage() {
   const handleToggleAll = async (targetActive: boolean) => {
     try {
       setBanners(prev => prev.map(item => ({ ...item, isActive: targetActive })));
-      await Promise.all(
-        banners.map(b =>
-          fetch(`/api/admin/banners/${b.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isActive: targetActive }),
-          })
-        )
-      );
+      await fetch('/api/admin/banners/toggle-visibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: targetActive }),
+      });
       fetchBanners();
     } catch {
       fetchBanners();
@@ -200,6 +196,52 @@ export default function AdminBannersPage() {
             <span>New Banner</span>
           </button>
         </div>
+      </div>
+
+      {/* QUICK BANNER VISIBILITY MASTER CARD */}
+      <div className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl ${
+        activeCount > 0
+          ? 'bg-gradient-to-r from-[#21171A] to-[#1C281F] border-emerald-500/50'
+          : 'bg-gradient-to-r from-[#21171A] to-[#2E151B] border-amber-500/50'
+      }`}>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-[#E8C477] uppercase tracking-wider">
+              Homepage Banner Display Control
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${
+              activeCount > 0 ? 'bg-emerald-950 text-emerald-300 border-emerald-500/50' : 'bg-red-950 text-red-300 border-red-500/50'
+            }`}>
+              {activeCount > 0 ? 'VISIBLE ON HOMEPAGE' : 'HIDDEN FROM HOMEPAGE'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-300">
+            {activeCount > 0
+              ? 'The promotional hero banner slider is currently active and visible to all visitors on the customer homepage.'
+              : 'The hero banner slider is currently completely hidden from the customer website homepage.'}
+          </p>
+        </div>
+
+        <button
+          onClick={() => handleToggleAll(activeCount === 0)}
+          className={`px-5 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shrink-0 ${
+            activeCount > 0
+              ? 'bg-[#2A171D] hover:bg-red-950 text-amber-300 hover:text-red-300 border border-amber-500/60'
+              : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-900/40'
+          }`}
+        >
+          {activeCount > 0 ? (
+            <>
+              <EyeOff className="w-4 h-4 text-amber-400" />
+              <span>Hide Banner from Website</span>
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4 text-white" />
+              <span>Show Banner on Website</span>
+            </>
+          )}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

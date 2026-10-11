@@ -601,7 +601,15 @@ export async function updateCloudBanner(id: string, updates: Partial<any>) {
     if (updates.ctaText !== undefined) patch.cta_text = updates.ctaText;
     if (updates.ctaLink !== undefined) patch.cta_link = updates.ctaLink;
 
-    await client.from('banners').update(patch).eq('id', id);
+    let targetId = id;
+    if (id === 'ban-001') targetId = '22222222-2222-2222-2222-000000000001';
+    else if (id === 'ban-002') targetId = '22222222-2222-2222-2222-000000000002';
+    else if (id === 'ban-003') targetId = '22222222-2222-2222-2222-000000000003';
+
+    await client.from('banners').update(patch).eq('id', targetId);
+    if (updates.displayOrder) {
+      await client.from('banners').update(patch).eq('display_order', updates.displayOrder);
+    }
   } catch (err) {
     console.warn('Update cloud banner error:', err);
   }
@@ -612,8 +620,9 @@ export async function toggleAllCloudBanners(isActive: boolean) {
   if (!client) return;
 
   try {
-    await client.from('banners').update({ is_active: isActive }).neq('id', '00000000-0000-0000-0000-000000000000');
+    await client.from('banners').update({ is_active: isActive }).not('id', 'is', null);
   } catch (err) {
     console.warn('Toggle all cloud banners error:', err);
   }
 }
+

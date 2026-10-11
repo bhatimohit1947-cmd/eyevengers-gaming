@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { normalizeMobile, hashPassword } from '@/lib/auth/password';
 import { sendOtp, verifyOtp } from '@/lib/auth/smsProvider';
 import { getProfileFromCloudByMobile, updateProfilePasswordInCloud } from '@/lib/db/supabaseSync';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 const requestOtpSchema = z.object({
   action: z.literal('request_otp'),
@@ -28,6 +29,18 @@ export async function POST(req: Request) {
       }
 
       const normalizedMobile = normalizeMobile(parsed.data.mobile);
+      const ip = getClientIp(req);
+
+      // Rate limit OTP requests: Max 3 per 10 minutes per mobile/IP to prevent SMS bombing
+      const otpLimit = checkRateLimit(`otp:${normalizedMobile}`, 3, 10 * 60 * 1000);
+      const ipOtpLimit = checkRateLimit(`otp:ip:${ip}`, 5, 10 * 60 * 1000);
+      if (!otpLimit.allowed || !ipOtpLimit.allowed) {
+        return NextResponse.json(
+          { error: 'Too many OTP requests. Please wait a few minutes before requesting again.' },
+          { status: 429 }
+        );
+      }
+
       const user = db.getUserByMobile(normalizedMobile);
       if (!user) {
         // Safe message: do not reveal user existence
@@ -41,7 +54,7 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         message: 'OTP dispatched successfully.',
-        devOtp: smsRes.devOtp, // For quick testing in development
+        ...(process.env.NODE_ENV !== 'production' && smsRes.devOtp ? { devOtp: smsRes.devOtp } : {}),
         provider: smsRes.provider,
       });
     }

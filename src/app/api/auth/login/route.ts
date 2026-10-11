@@ -5,6 +5,8 @@ import { normalizeMobile, verifyPassword } from '@/lib/auth/password';
 import { setSessionCookie } from '@/lib/auth/session';
 import { getProfileFromCloudByMobile } from '@/lib/db/supabaseSync';
 
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
+
 const loginSchema = z.object({
   mobile: z.string().min(10, 'Mobile number required'),
   password: z.string().min(1, 'Password required'),
@@ -12,6 +14,15 @@ const loginSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const ipLimit = checkRateLimit(`login:ip:${ip}`, 15, 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many login attempts from this network. Please wait a minute before trying again.' },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const parsed = loginSchema.safeParse(body);
 
@@ -21,6 +32,14 @@ export async function POST(req: Request) {
 
     const { mobile, password } = parsed.data;
     const normalizedMobile = normalizeMobile(mobile);
+
+    const mobileLimit = checkRateLimit(`login:mobile:${normalizedMobile}`, 8, 60 * 1000);
+    if (!mobileLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many login attempts for this mobile number. Please wait a minute.' },
+        { status: 429 }
+      );
+    }
 
     let user = db.getUserByMobile(normalizedMobile);
     let cloudUser = await getProfileFromCloudByMobile(normalizedMobile);
