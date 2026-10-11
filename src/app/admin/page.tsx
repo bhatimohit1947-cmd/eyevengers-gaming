@@ -15,7 +15,8 @@ import {
   Database,
   ArrowRight,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { RedemptionRecord, Campaign } from '@/lib/types';
 
@@ -38,17 +39,23 @@ export default function AdminOverviewPage() {
   const [recentRedemptions, setRecentRedemptions] = useState<RedemptionRecord[]>([]);
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const res = await fetch('/api/admin/metrics');
+      const data = await res.json();
+      if (data.metrics) setMetrics(data.metrics);
+      if (data.recentRedemptions) setRecentRedemptions(data.recentRedemptions);
+      if (data.activeCampaign) setActiveCampaign(data.activeCampaign);
+    } catch {} finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    fetch('/api/admin/metrics')
-      .then(res => res.json())
-      .then(data => {
-        if (data.metrics) setMetrics(data.metrics);
-        if (data.recentRedemptions) setRecentRedemptions(data.recentRedemptions);
-        if (data.activeCampaign) setActiveCampaign(data.activeCampaign);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    loadData();
   }, []);
 
   if (loading || !metrics) {
@@ -85,10 +92,25 @@ export default function AdminOverviewPage() {
         </div>
 
         {/* Database Mode Chip */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#2A171D] border border-[#E8C477]/30 text-xs">
-          <Database className="w-4 h-4 text-[#E8C477]" />
-          <span className="text-gray-300">Database Engine:</span>
-          <span className="font-bold text-[#FFF1CF]">ACID Storage Engine Ready</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setIsRefreshing(true);
+              loadData();
+            }}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#681F2B] hover:bg-[#8C1D40] border border-[#E8C477]/40 text-xs font-bold text-[#FFF1CF] transition-colors shadow-sm disabled:opacity-50"
+            title="Refresh metrics live"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#E8C477] ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh Live Data'}</span>
+          </button>
+
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#2A171D] border border-[#E8C477]/30 text-xs">
+            <Database className="w-4 h-4 text-[#E8C477]" />
+            <span className="text-gray-300">Storage:</span>
+            <span className="font-bold text-[#FFF1CF]">ACID Storage Engine Ready</span>
+          </div>
         </div>
       </div>
 

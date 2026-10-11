@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { syncCloudProfilesToLocalDb } from '@/lib/db/supabaseSync';
 
 export async function GET() {
   try {
@@ -8,6 +9,10 @@ export async function GET() {
     if (!session || session.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
+
+    try {
+      await syncCloudProfilesToLocalDb(db.getRawDb());
+    } catch {}
 
     const metrics = db.getDashboardMetrics();
     const recentRedemptions = db.getRecentRedemptions(8);

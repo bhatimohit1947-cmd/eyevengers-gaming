@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { allocateReward } from '@/lib/rewards/engine';
+import { saveVoucherToCloud } from '@/lib/db/supabaseSync';
 
 const playSchema = z.object({
   gameType: z.enum(['spin_wheel', 'mystery_box']),
@@ -84,6 +85,22 @@ export async function POST(req: Request) {
     if (!result.success || !result.voucher) {
       return NextResponse.json({ error: result.error || 'Reward allocation failed' }, { status: 500 });
     }
+
+    // Persist voucher to Supabase cloud in background
+    try {
+      saveVoucherToCloud({
+        id: result.voucher.id,
+        userId: result.voucher.userId,
+        campaignId: result.voucher.campaignId,
+        rewardId: result.voucher.rewardId,
+        voucherCode: result.voucher.voucherCode,
+        qrToken: result.voucher.qrToken,
+        status: result.voucher.status,
+        expiryDate: result.voucher.expiryDate,
+        createdAt: result.voucher.createdAt,
+        updatedAt: result.voucher.createdAt,
+      });
+    } catch {}
 
     // Calculate segment index for Spin Wheel visual alignment
     const segmentIndex = candidateRewards.findIndex(r => r.id === allocation.reward.id);

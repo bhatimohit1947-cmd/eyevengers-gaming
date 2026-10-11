@@ -8,11 +8,15 @@ import { MandalaMotif, ToranBorder } from '../ui/FestiveMotifs';
 
 interface MysteryBoxesGameProps {
   initialRemainingPlays?: number;
+  initialUser?: { id: string; name: string } | null;
 }
 
-export function MysteryBoxesGame({ initialRemainingPlays = 1 }: MysteryBoxesGameProps) {
+export function MysteryBoxesGame({ 
+  initialRemainingPlays = 1,
+  initialUser = null
+}: MysteryBoxesGameProps) {
   const [remainingPlays, setRemainingPlays] = useState(initialRemainingPlays);
-  const [user, setUser] = useState<{ id: string; name: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string } | null>(initialUser);
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
   const [isOpening, setIsOpening] = useState(false);
   const [revealedBoxIndex, setRevealedBoxIndex] = useState<number | null>(null);

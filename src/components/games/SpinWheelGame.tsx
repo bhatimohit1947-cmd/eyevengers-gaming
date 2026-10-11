@@ -190,6 +190,10 @@ export function SpinWheelGame({
 
       if (!res.ok || !data.success) {
         setIsSpinning(false);
+        if (res.status === 401) {
+          window.location.href = `/auth/login?redirect=${encodeURIComponent('/games/spin')}`;
+          return;
+        }
         setErrorMessage(data.error || 'Failed to start game play.');
         return;
       }

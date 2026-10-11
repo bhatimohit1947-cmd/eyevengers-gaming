@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { normalizeMobile, verifyPassword } from '@/lib/auth/password';
 import { setSessionCookie } from '@/lib/auth/session';
+import { getProfileFromCloudByMobile } from '@/lib/db/supabaseSync';
 
 const loginSchema = z.object({
   mobile: z.string().min(10, 'Mobile number required'),
@@ -21,7 +22,15 @@ export async function POST(req: Request) {
     const { mobile, password } = parsed.data;
     const normalizedMobile = normalizeMobile(mobile);
 
-    const user = db.getUserByMobile(normalizedMobile);
+    let user = db.getUserByMobile(normalizedMobile);
+    if (!user) {
+      const cloudUser = await getProfileFromCloudByMobile(normalizedMobile);
+      if (cloudUser && cloudUser.passwordHash) {
+        db.saveUserLocally(cloudUser as any);
+        user = db.getUserByMobile(normalizedMobile);
+      }
+    }
+
     if (!user) {
       // Safe generic message
       return NextResponse.json({ error: 'Invalid mobile number or password.' }, { status: 401 });

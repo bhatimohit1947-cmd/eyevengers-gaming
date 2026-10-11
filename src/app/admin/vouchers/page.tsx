@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Voucher } from '@/lib/types';
-import { Search, Ticket, CheckCircle2, Clock, XCircle, AlertCircle, ShieldAlert } from 'lucide-react';
+import { Search, Ticket, CheckCircle2, Clock, XCircle, AlertCircle, ShieldAlert, RefreshCw } from 'lucide-react';
 
 export default function AdminVouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -58,6 +58,14 @@ export default function AdminVouchersPage() {
             Track issued tickets, verify QR tokens, and inspect showroom redemptions.
           </p>
         </div>
+        <button
+          onClick={() => fetchVouchers(statusFilter, search)}
+          disabled={loading}
+          className="self-start sm:self-auto flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#681F2B] hover:bg-[#8C1D40] border border-[#E8C477]/40 text-xs font-bold text-[#FFF1CF] transition-colors shadow-sm disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-[#E8C477] ${loading ? 'animate-spin' : ''}`} />
+          <span>{loading ? 'Refreshing...' : 'Refresh Vouchers'}</span>
+        </button>
       </div>
 
       {/* Filter and Search Bar */}

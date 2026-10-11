@@ -17,7 +17,7 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
+    .setExpirationTime('30d')
     .sign(SECRET_KEY);
 }
 
@@ -53,7 +53,7 @@ export async function setSessionCookie(user: SessionUser) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days
     path: '/',
   });
 }

@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
-import { Users, Search, UserCheck, UserX } from 'lucide-react';
+import { Users, Search, UserCheck, UserX, RefreshCw } from 'lucide-react';
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchCustomers = (term?: string) => {
     let url = '/api/admin/customers';
@@ -18,8 +19,12 @@ export default function AdminCustomersPage() {
       .then(data => {
         if (data.customers) setCustomers(data.customers);
         setLoading(false);
+        setIsRefreshing(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        setIsRefreshing(false);
+      });
   };
 
   useEffect(() => {
@@ -41,6 +46,17 @@ export default function AdminCustomersPage() {
             Registered customers participating in EYEVENGERS festive games.
           </p>
         </div>
+        <button
+          onClick={() => {
+            setIsRefreshing(true);
+            fetchCustomers(search);
+          }}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#681F2B] hover:bg-[#8C1D40] border border-[#E8C477]/40 text-xs font-bold text-[#FFF1CF] transition-colors shadow-sm disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-[#E8C477] ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span>{isRefreshing ? 'Refreshing...' : 'Refresh List'}</span>
+        </button>
       </div>
 
       <form onSubmit={handleSearch} className="max-w-md flex gap-2">

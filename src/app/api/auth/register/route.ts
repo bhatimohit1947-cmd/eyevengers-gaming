@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { normalizeMobile, isValidIndianMobile, hashPassword } from '@/lib/auth/password';
 import { setSessionCookie } from '@/lib/auth/session';
+import { saveProfileToCloud, getProfileFromCloudByMobile } from '@/lib/db/supabaseSync';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -33,7 +34,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingUser = db.getUserByMobile(normalizedMobile);
+    let existingUser = db.getUserByMobile(normalizedMobile);
+    if (!existingUser) {
+      existingUser = await getProfileFromCloudByMobile(normalizedMobile);
+      if (existingUser) {
+        db.saveUserLocally(existingUser);
+      }
+    }
+
     if (existingUser) {
       return NextResponse.json(
         { error: 'An account is already registered with this mobile number. Please log in.' },
@@ -47,6 +55,16 @@ export async function POST(req: Request) {
       fullName: fullName.trim(),
       passwordHash,
       role: 'customer',
+    });
+
+    // Permanently persist to Supabase cloud
+    await saveProfileToCloud({
+      id: newUser.id,
+      mobile: newUser.mobile,
+      fullName: newUser.fullName,
+      passwordHash,
+      role: newUser.role,
+      status: newUser.status,
     });
 
     await setSessionCookie({

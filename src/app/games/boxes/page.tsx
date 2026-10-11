@@ -1,16 +1,44 @@
-'use client';
-
 import React from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { MysteryBoxesGame } from '@/components/games/MysteryBoxesGame';
+import { db } from '@/lib/db';
+import { getSession } from '@/lib/auth/session';
 
-export default function MysteryBoxesPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function MysteryBoxesPage() {
+  let boxRemaining = 1;
+  let user: { id: string; name: string } | null = null;
+
+  try {
+    const campaign = db.getActiveCampaign();
+    const session = await getSession();
+
+    if (session) {
+      user = { id: session.id, name: session.fullName };
+    }
+
+    if (campaign) {
+      if (session) {
+        const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile);
+        boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);
+      } else {
+        boxRemaining = campaign.boxLimitPerUser;
+      }
+    }
+  } catch (err) {
+    console.warn('Boxes page server prefetch error:', err);
+  }
+
   return (
     <div className="min-h-screen bg-festive-radiant flex flex-col text-[#FFFDF7]">
       <Navbar />
       <main className="flex-1 py-6">
-        <MysteryBoxesGame />
+        <MysteryBoxesGame 
+          initialRemainingPlays={boxRemaining}
+          initialUser={user}
+        />
       </main>
       <Footer />
     </div>

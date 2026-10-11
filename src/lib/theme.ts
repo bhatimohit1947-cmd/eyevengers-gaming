@@ -68,7 +68,7 @@ export const SHOWROOM_INFO = {
   addressLine: '137, Jhanwar Rd, opp. Birla School, opposite Royal Madrasi Restaurant, Vinayak Nagar, Katariya Choukha, Bhadu Market, Jodhpur, Rajasthan 342014',
   shortAddress: '137, Jhanwar Rd, opp. Birla School, Bhadu Market, Jodhpur',
   plusCode: '137, Jhanwar Rd, Bhadu Market, Jodhpur',
-  mapsUrl: 'https://maps.google.com/?q=137,+Jhanwar+Rd,+opp.+Birla+School,+opposite+Royal+Madrasi+Restaurant,+Vinayak+Nagar,+Katariya+Choukha,+Bhadu+Market,+Jodhpur,+Rajasthan+342014',
+  mapsUrl: 'https://www.google.com/maps/place/EYEVENGERS/@26.2499659,72.95744,17z/data=!3m1!4b1!4m6!3m5!1s0x39418f00268f3d5b:0x148a6f4f5c3cddd5!8m2!3d26.2499659!4d72.9600149!16s%2Fg%2F11ynk9zjq4?entry=ttu&g_ep=EgoyMDI2MTAwNy4wIKXMDSoASAFQAw%3D%3D',
   phone: '+91 72401 58860',
   secondaryPhone: '+91 88241 87493',
   email: 'care@eyevengers.com',

@@ -457,7 +457,7 @@ export const db = {
 
   createUser(data: { id?: string; mobile: string; fullName: string; passwordHash: string; role?: 'customer' | 'staff' | 'admin' }): UserProfile {
     const database = getDb();
-    const id = data.id || 'usr-' + crypto.randomUUID();
+    const id = data.id || crypto.randomUUID();
     const role = data.role || 'customer';
     const now = new Date().toISOString();
 
@@ -476,6 +476,25 @@ export const db = {
       createdAt: now,
       updatedAt: now,
     };
+  },
+
+  saveUserLocally(user: UserProfile & { passwordHash: string }) {
+    const database = getDb();
+    const now = new Date().toISOString();
+    const stmt = database.prepare(`
+      INSERT OR REPLACE INTO profiles (id, mobile, full_name, password_hash, role, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      user.id,
+      user.mobile,
+      user.fullName,
+      user.passwordHash,
+      user.role || 'customer',
+      user.status || 'active',
+      user.createdAt || now,
+      user.updatedAt || now
+    );
   },
 
   getAllUsers(role?: string, search?: string): UserProfile[] {
@@ -880,7 +899,7 @@ export const db = {
     `;
     const params: unknown[] = [userId];
     if (mobile) {
-      query += ' OR (u.mobile = ? AND u.mobile != ""))';
+      query += " OR (u.mobile = ? AND u.mobile != ''))";
       params.push(mobile);
     } else {
       query += ')';
@@ -1122,7 +1141,7 @@ export const db = {
     const params: unknown[] = [userId];
 
     if (mobile) {
-      query += ' OR (u.mobile = ? AND u.mobile != "")';
+      query += " OR (u.mobile = ? AND u.mobile != '')";
       params.push(mobile);
     }
 
@@ -1403,5 +1422,9 @@ export const db = {
       redemptionRate,
       estimatedCostPaise,
     };
+  },
+
+  getRawDb(): DatabaseSync {
+    return getDb();
   }
 };

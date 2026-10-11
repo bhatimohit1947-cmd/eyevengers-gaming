@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { normalizeMobile, hashPassword } from '@/lib/auth/password';
 import { sendOtp, verifyOtp } from '@/lib/auth/smsProvider';
+import { getProfileFromCloudByMobile, updateProfilePasswordInCloud } from '@/lib/db/supabaseSync';
 
 const requestOtpSchema = z.object({
   action: z.literal('request_otp'),
@@ -59,13 +60,22 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid or expired OTP. Please request a new one.' }, { status: 400 });
       }
 
-      const user = db.getUserByMobile(normalizedMobile);
+      let user = db.getUserByMobile(normalizedMobile);
+      if (!user) {
+        const cloudUser = await getProfileFromCloudByMobile(normalizedMobile);
+        if (cloudUser && cloudUser.passwordHash) {
+          db.saveUserLocally(cloudUser as any);
+          user = db.getUserByMobile(normalizedMobile);
+        }
+      }
+
       if (!user) {
         return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
       }
 
       const newHash = await hashPassword(newPassword);
       db.updateUserPassword(user.id, newHash);
+      await updateProfilePasswordInCloud(user.id, newHash);
 
       return NextResponse.json({
         success: true,
