@@ -9,9 +9,6 @@
     "lint": "eslint",
     "test": "tsx --test tests/auth.test.ts tests/rewards.test.ts tests/vouchers.test.ts"
   },
-  "engines": {
-    "node": "22.x"
-  },
   "allowScripts": {
     "core-js": true,
     "esbuild": true,
