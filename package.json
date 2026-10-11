@@ -10,7 +10,12 @@
     "test": "tsx --test tests/auth.test.ts tests/rewards.test.ts tests/vouchers.test.ts"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
+  },
+  "allowScripts": {
+    "core-js": true,
+    "esbuild": true,
+    "unrs-resolver": true
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
