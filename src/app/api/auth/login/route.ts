@@ -23,16 +23,19 @@ export async function POST(req: Request) {
     const normalizedMobile = normalizeMobile(mobile);
 
     let user = db.getUserByMobile(normalizedMobile);
-    if (!user) {
-      const cloudUser = await getProfileFromCloudByMobile(normalizedMobile);
-      if (cloudUser && cloudUser.passwordHash) {
+    let cloudUser = await getProfileFromCloudByMobile(normalizedMobile);
+
+    if (cloudUser && cloudUser.passwordHash) {
+      try {
         db.saveUserLocally(cloudUser as any);
-        user = db.getUserByMobile(normalizedMobile);
+      } catch {}
+      // If no local user or cloud user is newer, use cloudUser
+      if (!user) {
+        user = cloudUser;
       }
     }
 
     if (!user) {
-      // Safe generic message
       return NextResponse.json({ error: 'Invalid mobile number or password.' }, { status: 401 });
     }
 
@@ -43,7 +46,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const isValid = await verifyPassword(password, user.passwordHash);
+    // Verify password against local hash or cloud hash
+    let isValid = await verifyPassword(password, user.passwordHash);
+    if (!isValid && cloudUser && cloudUser.passwordHash) {
+      isValid = await verifyPassword(password, cloudUser.passwordHash);
+      if (isValid) {
+        user = cloudUser;
+      }
+    }
+
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid mobile number or password.' }, { status: 401 });
     }

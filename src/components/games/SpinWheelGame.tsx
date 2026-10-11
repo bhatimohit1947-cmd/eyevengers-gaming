@@ -38,21 +38,19 @@ export function SpinWheelGame({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Fetch status if initial empty
+  // Always sync latest remaining chances and rewards on client mount
   useEffect(() => {
-    if (initialRewards.length === 0) {
-      fetch('/api/games/status')
-        .then(res => res.json())
-        .then(data => {
-          if (data.rewards?.spinWheel) {
-            setRewards(data.rewards.spinWheel);
-          }
-          if (data.plays) {
-            setRemainingPlays(data.plays.spinRemaining);
-          }
-        })
-        .catch(() => {});
-    }
+    fetch('/api/games/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data.rewards?.spinWheel && initialRewards.length === 0) {
+          setRewards(data.rewards.spinWheel);
+        }
+        if (data.plays) {
+          setRemainingPlays(data.plays.spinRemaining);
+        }
+      })
+      .catch(() => {});
   }, [initialRewards]);
 
   // Draw the high-resolution canvas prize wheel

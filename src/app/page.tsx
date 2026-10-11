@@ -7,6 +7,7 @@ import { GameCards } from '@/components/home/GameCards';
 import { Footer } from '@/components/layout/Footer';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
 import { SHOWROOM_INFO } from '@/lib/theme';
 import { Sparkles, Glasses, Eye, ShieldCheck, MapPin, Award, CheckCircle2 } from 'lucide-react';
 import { MandalaMotif, ToranBorder } from '@/components/ui/FestiveMotifs';
@@ -39,8 +40,14 @@ export default async function HomePage() {
     boxRemaining = campaign ? campaign.boxLimitPerUser : 1;
 
     if (session && campaign) {
-      const spinCount = db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile);
-      const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile);
+      const [localSpin, localBox, cloudSpin, cloudBox] = await Promise.all([
+        db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile),
+        db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile),
+        getCloudUserPlaysCount(session.id, 'spin_wheel'),
+        getCloudUserPlaysCount(session.id, 'mystery_box'),
+      ]);
+      const spinCount = Math.max(localSpin, cloudSpin);
+      const boxCount = Math.max(localBox, cloudBox);
       spinRemaining = Math.max(0, campaign.spinLimitPerUser - spinCount);
       boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);
     }

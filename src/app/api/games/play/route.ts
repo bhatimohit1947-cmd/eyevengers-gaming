@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { allocateReward } from '@/lib/rewards/engine';
-import { saveVoucherToCloud } from '@/lib/db/supabaseSync';
+import { saveVoucherToCloud, saveGamePlayToCloud, getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
 
 const playSchema = z.object({
   gameType: z.enum(['spin_wheel', 'mystery_box']),
@@ -42,9 +42,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Mystery Boxes game is currently closed.' }, { status: 400 });
     }
 
-    // 2. Check play limits
+    // 2. Check play limits (both local SQLite and Supabase cloud to prevent multi-device bypass)
     const allowedLimit = gameType === 'spin_wheel' ? campaign.spinLimitPerUser : campaign.boxLimitPerUser;
-    const currentPlays = db.getUserPlaysCount(session.id, campaign.id, gameType, session.mobile);
+    const localPlays = db.getUserPlaysCount(session.id, campaign.id, gameType, session.mobile);
+    const cloudPlays = await getCloudUserPlaysCount(session.id, gameType);
+    const currentPlays = Math.max(localPlays, cloudPlays);
 
     if (currentPlays >= allowedLimit) {
       return NextResponse.json(
@@ -82,25 +84,38 @@ export async function POST(req: Request) {
       expiryDays: 14,
     });
 
-    if (!result.success || !result.voucher) {
+    if (!result.success || !result.voucher || !result.gamePlay) {
       return NextResponse.json({ error: result.error || 'Reward allocation failed' }, { status: 500 });
     }
 
-    // Persist voucher to Supabase cloud in background
+    // Persist BOTH voucher and game play to Supabase cloud
     try {
-      saveVoucherToCloud({
-        id: result.voucher.id,
-        userId: result.voucher.userId,
-        campaignId: result.voucher.campaignId,
-        rewardId: result.voucher.rewardId,
-        voucherCode: result.voucher.voucherCode,
-        qrToken: result.voucher.qrToken,
-        status: result.voucher.status,
-        expiryDate: result.voucher.expiryDate,
-        createdAt: result.voucher.createdAt,
-        updatedAt: result.voucher.createdAt,
-      });
-    } catch {}
+      await Promise.all([
+        saveVoucherToCloud({
+          id: result.voucher.id,
+          userId: result.voucher.userId,
+          campaignId: result.voucher.campaignId,
+          rewardId: result.voucher.rewardId,
+          voucherCode: result.voucher.voucherCode,
+          qrToken: result.voucher.qrToken,
+          status: result.voucher.status,
+          expiryDate: result.voucher.expiryDate,
+          createdAt: result.voucher.createdAt,
+          updatedAt: result.voucher.createdAt,
+        }),
+        saveGamePlayToCloud({
+          id: result.gamePlay.id,
+          userId: session.id,
+          campaignId: campaign.id,
+          gameType,
+          rewardId: allocation.reward.id,
+          metadata: parsed.data.boxIndex !== undefined ? { boxIndex: parsed.data.boxIndex } : {},
+          playedAt: new Date().toISOString(),
+        }),
+      ]);
+    } catch (err) {
+      console.warn('Cloud sync on play warning:', err);
+    }
 
     // Calculate segment index for Spin Wheel visual alignment
     const segmentIndex = candidateRewards.findIndex(r => r.id === allocation.reward.id);

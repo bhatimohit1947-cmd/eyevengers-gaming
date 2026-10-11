@@ -4,6 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 import { SpinWheelGame } from '@/components/games/SpinWheelGame';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,11 @@ export default async function SpinWheelPage() {
       }));
 
       if (session) {
-        const spinCount = db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile);
+        const [localSpin, cloudSpin] = await Promise.all([
+          db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile),
+          getCloudUserPlaysCount(session.id, 'spin_wheel'),
+        ]);
+        const spinCount = Math.max(localSpin, cloudSpin);
         spinRemaining = Math.max(0, campaign.spinLimitPerUser - spinCount);
       } else {
         spinRemaining = campaign.spinLimitPerUser;

@@ -4,6 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 import { MysteryBoxesGame } from '@/components/games/MysteryBoxesGame';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,11 @@ export default async function MysteryBoxesPage() {
 
     if (campaign) {
       if (session) {
-        const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile);
+        const [localBox, cloudBox] = await Promise.all([
+          db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile),
+          getCloudUserPlaysCount(session.id, 'mystery_box'),
+        ]);
+        const boxCount = Math.max(localBox, cloudBox);
         boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);
       } else {
         boxRemaining = campaign.boxLimitPerUser;

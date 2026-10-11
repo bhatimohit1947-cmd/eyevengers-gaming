@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
 
 export async function GET() {
   try {
@@ -18,8 +19,16 @@ export async function GET() {
     let userPlays = { spinWheel: 0, mysteryBox: 0 };
 
     if (session) {
-      const spinCount = db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile);
-      const boxCount = db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile);
+      const [localSpin, localBox, cloudSpin, cloudBox] = await Promise.all([
+        db.getUserPlaysCount(session.id, campaign.id, 'spin_wheel', session.mobile),
+        db.getUserPlaysCount(session.id, campaign.id, 'mystery_box', session.mobile),
+        getCloudUserPlaysCount(session.id, 'spin_wheel'),
+        getCloudUserPlaysCount(session.id, 'mystery_box'),
+      ]);
+
+      const spinCount = Math.max(localSpin, cloudSpin);
+      const boxCount = Math.max(localBox, cloudBox);
+
       userPlays = { spinWheel: spinCount, mysteryBox: boxCount };
       spinRemaining = Math.max(0, campaign.spinLimitPerUser - spinCount);
       boxRemaining = Math.max(0, campaign.boxLimitPerUser - boxCount);
