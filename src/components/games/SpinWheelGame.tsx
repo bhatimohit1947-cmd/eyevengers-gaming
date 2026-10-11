@@ -122,25 +122,27 @@ export function SpinWheelGame({
       ctx.fill();
       ctx.restore();
 
-      // Text label inside slice
+      // Text label inside slice with maximum contrast & clarity
       ctx.save();
       ctx.translate(center, center);
       ctx.rotate(midAngle);
 
-      // Contrast drop shadow for ultra-clear legibility
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1;
+      const label = item.name.length > 22 ? item.name.substring(0, 20) + '..' : item.name;
 
-      ctx.fillStyle = theme.text;
-      ctx.font = '900 13px system-ui, -apple-system, sans-serif';
+      ctx.font = '900 14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
 
-      // Truncate cleanly for wheel radius
-      const label = item.name.length > 20 ? item.name.substring(0, 18) + '..' : item.name;
-      ctx.fillText(label, radius - 26, 0);
+      // Thick dark outline for 100% crisp readability
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+      ctx.lineWidth = 4;
+      ctx.lineJoin = 'round';
+      ctx.miterLimit = 2;
+      ctx.strokeText(label, radius - 24, 0);
+
+      // High-contrast radiant fill
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(label, radius - 24, 0);
 
       ctx.restore();
     });

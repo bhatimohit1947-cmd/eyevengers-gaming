@@ -201,8 +201,11 @@ export default function AdminRewardsPage() {
                         : (r.discountPercentage > 0 ? `${r.discountPercentage}% OFF` : 'Complimentary')}
                       <div className="text-[10px] text-gray-400 capitalize">{r.rewardType.replace('_', ' ')}</div>
                     </td>
-                    <td className="p-3 font-bold text-[#FFF1CF]">
-                      {r.probabilityPercent}%
+                    <td className="p-3">
+                      <div className="font-bold text-[#FFF1CF]">{r.probabilityPercent}% Chance</div>
+                      <div className="text-[10px] text-[#E8C477]">
+                        {r.minPurchasePaise > 0 ? `Min ₹${r.minPurchasePaise / 100}` : 'No Min Order'}
+                      </div>
                     </td>
                     <td className="p-3">
                       <div className="font-semibold text-gray-200">
@@ -350,18 +353,31 @@ export default function AdminRewardsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-[#E8C477] uppercase mb-1">Win Probability (%)</label>
+                  <label className="block font-bold text-[#E8C477] uppercase mb-1">Min Purchase in ₹ (Rupees)</label>
                   <input
                     type="number"
-                    step="any"
                     min={0}
-                    max={100}
-                    required
-                    value={probabilityPercent}
-                    onChange={(e) => setProbabilityPercent(parseFloat(e.target.value) || 0)}
+                    value={minPurchase}
+                    onChange={(e) => setMinPurchase(parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-lg bg-[#21171A] border border-[#E8C477]/30 text-[#FFF4E3]"
+                    placeholder="e.g. 999 (0 for no min)"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-[#E8C477] uppercase mb-1">Winning Criteria / Odds (%)</label>
+                <input
+                  type="number"
+                  step="any"
+                  min={0}
+                  max={100}
+                  required
+                  value={probabilityPercent}
+                  onChange={(e) => setProbabilityPercent(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded-lg bg-[#21171A] border border-[#E8C477]/30 text-[#FFF4E3]"
+                  placeholder="e.g. 25 for 25% chance"
+                />
               </div>
 
               <div>
