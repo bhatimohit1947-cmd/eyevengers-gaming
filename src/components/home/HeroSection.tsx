@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Sparkles, Gift, ArrowDown, Award, Eye, MapPin } from 'lucide-react';
-import { MandalaMotif, ToranBorder, DiyaIcon, FestiveStar } from '../ui/FestiveMotifs';
+import { Gift, ArrowDown, Award, Eye, MapPin } from 'lucide-react';
+import { MandalaMotif, ToranBorder, DiyaIcon, DandiyaIcon } from '../ui/FestiveMotifs';
 import { SessionUser } from '@/lib/types';
 import { SHOWROOM_INFO } from '@/lib/theme';
 
@@ -42,11 +42,11 @@ export function HeroSection({ user, campaignName = 'Navratri & Festive Optical M
         
         {/* Festival Campaign Tag with Colorful Festive Border */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF1493]/30 via-[#FFD700]/25 to-[#00E5FF]/30 border-2 border-[#FFD700] shadow-[0_0_20px_rgba(255,215,0,0.4)] mb-6 animate-pulse">
-          <DiyaIcon className="w-4 h-4 text-[#FFD700] drop-shadow-[0_0_8px_#FFD700]" />
+          <DandiyaIcon className="w-4 h-4 text-[#FFD700] drop-shadow-[0_0_8px_#FFD700]" />
           <span className="text-xs sm:text-sm font-black text-[#FFFDF7] tracking-wider uppercase">
-            ✨ {campaignName} ✨
+            {campaignName}
           </span>
-          <FestiveStar className="w-3.5 h-3.5 text-[#00E5FF]" />
+          <DandiyaIcon className="w-4 h-4 text-[#00E5FF] drop-shadow-[0_0_8px_#00E5FF]" />
         </div>
 
         {/* Big Bold Radiant Headline with Illuminated Lighting Effects */}
@@ -75,7 +75,7 @@ export function HeroSection({ user, campaignName = 'Navratri & Festive Optical M
             onClick={scrollToGames}
             className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#FFF6BD] via-[#FFD700] to-[#FF9100] text-[#1F0717] font-black text-sm sm:text-base hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,215,0,0.6)] flex items-center justify-center gap-2 border border-[#FFFDF7]/60"
           >
-            <Sparkles className="w-5 h-5 text-[#B31237]" />
+            <DandiyaIcon className="w-5 h-5 text-[#B31237]" />
             <span>Play Festive Games</span>
             <ArrowDown className="w-4 h-4 ml-1 animate-bounce" />
           </button>

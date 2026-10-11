@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Campaign, FestivalTheme } from '@/lib/types';
-import { Plus, Edit3, Check, X, Calendar, Sparkles, AlertCircle } from 'lucide-react';
+import { Plus, Edit3, Check, X, Calendar, AlertCircle } from 'lucide-react';
 
 export default function AdminCampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);

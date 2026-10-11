@@ -4,8 +4,8 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BrandLogo } from '@/components/ui/BrandLogo';
-import { ToranBorder, MandalaMotif } from '@/components/ui/FestiveMotifs';
-import { User, Phone, Lock, CheckSquare, Square, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { ToranBorder, MandalaMotif, DandiyaIcon } from '@/components/ui/FestiveMotifs';
+import { User, Phone, Lock, CheckSquare, Square, AlertCircle, ArrowRight } from 'lucide-react';
 
 function RegisterForm() {
   const router = useRouter();
@@ -191,7 +191,7 @@ function RegisterForm() {
               <span>Creating Account...</span>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
+                <DandiyaIcon className="w-4 h-4 text-[#B31237]" />
                 <span>Register & Start Playing</span>
                 <ArrowRight className="w-4 h-4" />
               </>

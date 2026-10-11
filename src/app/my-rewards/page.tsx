@@ -8,7 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { TicketVoucherCard } from '@/components/voucher/TicketVoucherCard';
 import { ToranBorder, DiyaIcon } from '@/components/ui/FestiveMotifs';
 import { Voucher } from '@/lib/types';
-import { Gift, Sparkles, Compass, AlertCircle } from 'lucide-react';
+import { Gift, Compass, AlertCircle } from 'lucide-react';
 
 export default function MyRewardsPage() {
   const router = useRouter();

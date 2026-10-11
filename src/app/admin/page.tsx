@@ -15,9 +15,10 @@ import {
   Database,
   ArrowRight,
   ShieldCheck,
-  Sparkles,
+  Gamepad2,
   RefreshCw
 } from 'lucide-react';
+import { DandiyaIcon } from '@/components/ui/FestiveMotifs';
 import { RedemptionRecord, Campaign } from '@/lib/types';
 
 interface MetricsData {
@@ -68,7 +69,7 @@ export default function AdminOverviewPage() {
 
   const statCards = [
     { label: 'Registered Customers', value: metrics.totalCustomers, icon: Users, color: 'text-[#FFF4E3]', bg: 'bg-[#2A171D]' },
-    { label: 'Total Game Plays', value: metrics.totalPlays, icon: Sparkles, color: 'text-[#E8C477]', bg: 'bg-[#2A171D]', sub: `Spin: ${metrics.spinPlays} | Boxes: ${metrics.boxPlays}` },
+    { label: 'Total Game Plays', value: metrics.totalPlays, icon: Gamepad2, color: 'text-[#E8C477]', bg: 'bg-[#2A171D]', sub: `Spin: ${metrics.spinPlays} | Boxes: ${metrics.boxPlays}` },
     { label: 'Vouchers Issued', value: metrics.vouchersIssued, icon: Ticket, color: 'text-[#FFF1CF]', bg: 'bg-[#2A171D]' },
     { label: 'Vouchers Redeemed', value: metrics.vouchersRedeemed, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-[#2A171D]' },
     { label: 'Redemption Rate', value: `${metrics.redemptionRate}%`, icon: TrendingUp, color: 'text-[#FF5149]', bg: 'bg-[#2A171D]' },
@@ -119,7 +120,7 @@ export default function AdminOverviewPage() {
         <div className="p-6 rounded-2xl bg-gradient-to-r from-[#681F2B] via-[#4A1620] to-[#21171A] border border-[#E8C477]/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E8C477] uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-[#FF5149]" />
+              <DandiyaIcon className="w-3.5 h-3.5 text-[#FF5149]" />
               <span>Currently Active Campaign</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-[#FFF4E3]">

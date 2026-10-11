@@ -5,7 +5,8 @@ import QRCode from 'qrcode';
 import { Voucher } from '@/lib/types';
 import { generateVoucherPdfBlob } from '@/lib/pdf/voucherPdf';
 import { SHOWROOM_INFO } from '@/lib/theme';
-import { Download, QrCode, CheckCircle2, Clock, XCircle, MapPin, Sparkles } from 'lucide-react';
+import { Download, QrCode, CheckCircle2, Clock, XCircle, MapPin } from 'lucide-react';
+import { DandiyaIcon } from '@/components/ui/FestiveMotifs';
 
 interface TicketVoucherCardProps {
   voucher: Voucher;
@@ -77,7 +78,7 @@ export function TicketVoucherCard({ voucher }: TicketVoucherCardProps) {
     }
     return (
       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#681F2B] border border-[#E8C477]/40 text-[#FFF1CF] text-xs font-bold">
-        <Sparkles className="w-3.5 h-3.5 text-[#E8C477]" />
+        <DandiyaIcon className="w-3.5 h-3.5 text-[#E8C477]" />
         <span>Active & Valid</span>
       </span>
     );

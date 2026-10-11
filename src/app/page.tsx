@@ -9,8 +9,8 @@ import { db } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { getCloudUserPlaysCount } from '@/lib/db/supabaseSync';
 import { SHOWROOM_INFO } from '@/lib/theme';
-import { Sparkles, Glasses, Eye, ShieldCheck, MapPin, Award, CheckCircle2 } from 'lucide-react';
-import { MandalaMotif, ToranBorder } from '@/components/ui/FestiveMotifs';
+import { Glasses, Eye, ShieldCheck, MapPin, Award, CheckCircle2 } from 'lucide-react';
+import { MandalaMotif, ToranBorder, DandiyaIcon } from '@/components/ui/FestiveMotifs';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +93,7 @@ export default async function HomePage() {
             
             <div className="text-center max-w-2xl mx-auto mb-16">
               <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF1493]/20 via-[#FFD700]/20 to-[#00E5FF]/20 border border-[#FFD700]/50 text-xs font-bold text-[#FFD700] mb-3 shadow-[0_0_15px_rgba(255,215,0,0.3)]">
-                <Sparkles className="w-3.5 h-3.5 text-[#FF1493]" />
+                <DandiyaIcon className="w-3.5 h-3.5 text-[#FF1493]" />
                 <span className="uppercase tracking-wider">Why Choose EYEVENGERS</span>
               </div>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#FFFDF7] tracking-tight">

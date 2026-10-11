@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { SessionUser } from '@/lib/types';
-import { Sparkles, Gift, ArrowRight } from 'lucide-react';
-import { MandalaMotif, FestiveStar } from '../ui/FestiveMotifs';
+import { Gift, ArrowRight } from 'lucide-react';
+import { MandalaMotif, DandiyaIcon } from '../ui/FestiveMotifs';
 import { FestiveLights } from '../ui/FestiveLights';
 
 interface GameCardsProps {
@@ -64,9 +64,9 @@ export function GameCards({
         {/* Section Heading with Colorful Festive Tag */}
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-14">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#FF1493]/30 via-[#FFD700]/30 to-[#00E5FF]/30 border border-[#FFD700]/60 text-xs font-bold text-[#FFD700] mb-3 shadow-[0_0_15px_rgba(255,215,0,0.3)]">
-            <Sparkles className="w-3.5 h-3.5 text-[#FF1493] animate-spin" style={{ animationDuration: '6s' }} />
-            <span className="uppercase tracking-wider">Colorful Festive Games</span>
-            <Sparkles className="w-3.5 h-3.5 text-[#00E5FF]" />
+            <DandiyaIcon className="w-3.5 h-3.5 text-[#FF1493]" />
+            <span className="uppercase tracking-wider">Navratri Festive Games</span>
+            <DandiyaIcon className="w-3.5 h-3.5 text-[#00E5FF]" />
           </div>
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#FFFDF7] tracking-tight mb-2 sm:mb-3">
             Choose Your Festive Game
@@ -86,7 +86,7 @@ export function GameCards({
               {/* Header with non-overlapping flexbox */}
               <div className="flex items-center justify-between gap-1 mb-1">
                 <div className="flex items-center gap-1 text-[9px] sm:text-xs font-bold text-[#FFD700] uppercase tracking-wider truncate">
-                  <FestiveStar className="w-3 h-3 shrink-0 text-[#FFD700]" />
+                  <DandiyaIcon className="w-3 h-3 shrink-0 text-[#FFD700]" />
                   <span className="truncate">Prize Wheel</span>
                 </div>
                 <span className="px-1.5 sm:px-3 py-0.5 rounded-full bg-gradient-to-r from-[#FFE066] to-[#FFD700] text-[#1F0717] text-[8px] sm:text-xs font-black uppercase tracking-wider shadow-md shrink-0">

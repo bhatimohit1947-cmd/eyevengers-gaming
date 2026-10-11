@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Banner } from '@/lib/types';
-import { ChevronLeft, ChevronRight, Play, Pause, Sparkles, ArrowRight } from 'lucide-react';
-import { MandalaMotif } from '../ui/FestiveMotifs';
+import { ChevronLeft, ChevronRight, Play, Pause, ArrowRight } from 'lucide-react';
+import { MandalaMotif, DandiyaIcon, DandiyaBannerMotif } from '../ui/FestiveMotifs';
 
 interface BannerSliderProps {
   initialBanners?: Banner[];
@@ -68,9 +68,9 @@ export function BannerSlider({ initialBanners = [] }: BannerSliderProps) {
           
           {/* Banner Content */}
           <div className="md:col-span-8 space-y-3.5 transition-all duration-500">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#681F2B]/80 border border-[#E8C477]/30 text-xs font-bold text-[#E8C477]">
-              <Sparkles className="w-3.5 h-3.5 text-[#FF5149]" />
-              <span>Special Festive Offer • Jodhpur</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#681F2B]/90 border border-[#FFD700]/40 text-xs font-bold text-[#FFF1CF] shadow-sm">
+              <DandiyaIcon className="w-4 h-4 text-[#FFD700]" />
+              <span>Navratri Festive Mahotsav • Jodhpur</span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#FFF4E3] tracking-tight leading-tight">
@@ -92,14 +92,14 @@ export function BannerSlider({ initialBanners = [] }: BannerSliderProps) {
             </div>
           </div>
 
-          {/* Banner Badge / Aesthetic Geometric Stamp */}
+          {/* Banner Badge / Authentic Dandiya Festive Stamp */}
           <div className="hidden md:flex md:col-span-4 justify-end">
             <div className="relative p-6 rounded-2xl bg-[#2A171D]/90 border border-[#E8C477]/40 shadow-2xl flex flex-col items-center text-center max-w-xs">
-              <div className="w-14 h-14 rounded-full bg-[#681F2B] border border-[#E8C477] flex items-center justify-center text-[#E8C477] mb-3">
-                <Sparkles className="w-7 h-7" />
+              <div className="mb-2">
+                <DandiyaBannerMotif className="w-16 h-16 drop-shadow-[0_0_10px_rgba(255,215,0,0.4)]" />
               </div>
-              <div className="text-xs uppercase tracking-widest text-[#E8C477] font-bold mb-1">
-                Showroom Special
+              <div className="text-xs uppercase tracking-widest text-[#FFD700] font-black mb-1">
+                Navratri Special
               </div>
               <div className="text-lg font-black text-[#FFF4E3] leading-snug">
                 100% Guaranteed Festive Rewards

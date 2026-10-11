@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { ToranBorder } from '@/components/ui/FestiveMotifs';
+import { ToranBorder, DandiyaIcon } from '@/components/ui/FestiveMotifs';
 import { Voucher, RedemptionRecord } from '@/lib/types';
 import { 
   Scan, 
@@ -12,8 +12,7 @@ import {
   CheckCircle2, 
   Clock, 
   AlertCircle, 
-  Receipt, 
-  Sparkles 
+  Receipt
 } from 'lucide-react';
 
 function RedeemContent() {
@@ -186,7 +185,7 @@ function RedeemContent() {
                 </span>
               ) : (
                 <span className="px-3 py-1 rounded-full bg-[#681F2B] text-[#FFF1CF] border border-[#E8C477]/40 text-xs font-bold flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#E8C477]" /> Ready to Redeem
+                  <DandiyaIcon className="w-3.5 h-3.5 text-[#E8C477]" /> Ready to Redeem
                 </span>
               )}
             </div>

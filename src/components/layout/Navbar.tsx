@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { BrandLogo } from '../ui/BrandLogo';
 import { SessionUser } from '@/lib/types';
 import { 
-  Sparkles, 
   Gift, 
   User as UserIcon, 
   LogOut, 
@@ -16,7 +15,7 @@ import {
   Scan,
   Compass
 } from 'lucide-react';
-
+import { DandiyaIcon } from '../ui/FestiveMotifs';
 import { FestiveLights } from '../ui/FestiveLights';
 
 export function Navbar() {
@@ -50,9 +49,9 @@ export function Navbar() {
         {/* Left: Brand Logo & Festive Tag */}
         <div className="flex items-center gap-4">
           <BrandLogo size="md" />
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#681F2B]/60 border border-[#E8C477]/30 text-xs font-semibold text-[#FFF1CF]">
-            <Sparkles className="w-3.5 h-3.5 text-[#E8C477]" />
-            <span>Festive Dhamaka 2026</span>
+          <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#681F2B]/80 border border-[#FFD700]/40 text-xs font-bold text-[#FFF1CF] shadow-sm">
+            <DandiyaIcon className="w-4 h-4 text-[#FFD700]" />
+            <span>Navratri Mahotsav 2026</span>
           </div>
         </div>
 
@@ -176,8 +175,8 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-[#21171A] border-b border-[#E8C477]/30 px-6 py-6 space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-[#E8C477]/20">
-            <Sparkles className="w-4 h-4 text-[#E8C477]" />
-            <span className="text-xs text-[#FFF1CF] font-bold">Festive Optical Mahotsav 2026</span>
+            <DandiyaIcon className="w-4 h-4 text-[#E8C477]" />
+            <span className="text-xs text-[#FFF1CF] font-bold">Navratri Mahotsav 2026</span>
           </div>
           <Link
             href="/"

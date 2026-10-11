@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Sparkles, Gift, ArrowRight, AlertCircle, RefreshCw, Trophy, FileText } from 'lucide-react';
+import { Gift, ArrowRight, AlertCircle, RefreshCw, Trophy, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { MandalaMotif, ToranBorder } from '../ui/FestiveMotifs';
+import { MandalaMotif, ToranBorder, DandiyaIcon } from '../ui/FestiveMotifs';
 
 interface MysteryBoxesGameProps {
   initialRemainingPlays?: number;
@@ -125,7 +125,7 @@ export function MysteryBoxesGame({
       {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#681F2B]/70 border border-[#E8C477]/30 text-xs font-bold text-[#FF5149] mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#E8C477]" />
+          <DandiyaIcon className="w-3.5 h-3.5 text-[#E8C477]" />
           <span>Navratri Mystery Gift Reveal</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-black text-[#FFF4E3] tracking-tight">
