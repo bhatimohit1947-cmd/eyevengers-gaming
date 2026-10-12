@@ -77,23 +77,35 @@ export async function getProfileFromCloudByMobile(mobile: string): Promise<(User
   if (!client) return null;
 
   try {
+    const cleaned = mobile.replace(/[\s\-()]/g, '');
+    const digits10 = cleaned.replace(/\D/g, '').slice(-10);
+    const variants = Array.from(new Set([
+      mobile,
+      cleaned,
+      `+91${digits10}`,
+      digits10,
+      `91${digits10}`,
+      `0${digits10}`,
+    ])).filter(Boolean);
+
     const { data, error } = await client
       .from('profiles')
       .select('*')
-      .eq('mobile', mobile)
-      .maybeSingle();
+      .in('mobile', variants)
+      .limit(1);
 
-    if (error || !data) return null;
+    if (error || !data || data.length === 0) return null;
 
+    const row = data[0];
     return {
-      id: data.id,
-      mobile: data.mobile,
-      fullName: data.full_name,
-      passwordHash: data.password_hash,
-      role: data.role,
-      status: data.status,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      id: row.id,
+      mobile: row.mobile,
+      fullName: row.full_name,
+      passwordHash: row.password_hash,
+      role: row.role,
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   } catch (err) {
     console.warn('Fetch cloud profile warning:', err);
@@ -165,7 +177,11 @@ const REWARD_REVERSE_MAP: Record<string, string> = Object.fromEntries(
 
 export function toCloudUUID(val?: string): string {
   if (!val) return crypto.randomUUID();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   let clean = val;
+  if (clean.startsWith('cmp-') && uuidRegex.test(clean.replace('cmp-', ''))) {
+    return clean.replace('cmp-', '');
+  }
   if (
     clean.startsWith('usr-') ||
     clean.startsWith('adm-') ||
@@ -175,10 +191,9 @@ export function toCloudUUID(val?: string): string {
   ) {
     clean = clean.replace(/^(usr-|adm-|stf-|vch-|gpl-)/, '');
   }
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (uuidRegex.test(clean)) return clean;
   if (REWARD_MAP[val]) return REWARD_MAP[val];
-  if (val.startsWith('cmp-')) return DEFAULT_CLOUD_CAMPAIGN_ID;
+  if (val === 'cmp-festive-navratri-2026' || val.startsWith('cmp-')) return DEFAULT_CLOUD_CAMPAIGN_ID;
 
   // Deterministic MD5 hash formatted as standard UUIDv4 (the same input ALWAYS produces the same UUID)
   const hash = crypto.createHash('md5').update(val).digest('hex');
@@ -626,39 +641,51 @@ export async function toggleAllCloudBanners(isActive: boolean) {
   }
 }
 
+function mapCloudReward(r: any) {
+  return {
+    id: r.id,
+    campaignId: r.campaign_id,
+    name: r.name,
+    description: r.description || '',
+    rewardType: r.reward_type,
+    monetaryValuePaise: Number(r.monetary_value_paise || 0),
+    discountPercentage: Number(r.discount_percentage || 0),
+    minPurchasePaise: Number(r.min_purchase_paise || 0),
+    maxDiscountPaise: Number(r.max_discount_paise || 0),
+    totalInventory: Number(r.total_inventory || 0),
+    reservedInventory: Number(r.reserved_inventory || 0),
+    issuedCount: Number(r.issued_count || 0),
+    redeemedCount: Number(r.redeemed_count || 0),
+    probabilityPercent: Number(r.probability_percent || 0),
+    isActive: !!r.is_active,
+    applicableGame: r.applicable_game,
+    terms: r.terms || '',
+    color: r.color || '#E8C477',
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
 export async function getCloudRewards(campaignId?: string): Promise<any[]> {
   const client = getSupabase();
   if (!client) return [];
 
   try {
     let query = client.from('rewards').select('*').order('created_at', { ascending: true });
-    if (campaignId) {
-      query = query.eq('campaign_id', campaignId);
+    // Only filter by campaignId if it's a UUID and not the local 'cmp-' slug
+    if (campaignId && !campaignId.startsWith('cmp-')) {
+      const specific = await client
+        .from('rewards')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: true });
+      if (specific.data && specific.data.length > 0) {
+        return specific.data.map(mapCloudReward);
+      }
     }
     const { data, error } = await query;
     if (error || !data) return [];
-    return data.map(r => ({
-      id: r.id,
-      campaignId: r.campaign_id,
-      name: r.name,
-      description: r.description || '',
-      rewardType: r.reward_type,
-      monetaryValuePaise: Number(r.monetary_value_paise || 0),
-      discountPercentage: Number(r.discount_percentage || 0),
-      minPurchasePaise: Number(r.min_purchase_paise || 0),
-      maxDiscountPaise: Number(r.max_discount_paise || 0),
-      totalInventory: Number(r.total_inventory || 0),
-      reservedInventory: Number(r.reserved_inventory || 0),
-      issuedCount: Number(r.issued_count || 0),
-      redeemedCount: Number(r.redeemed_count || 0),
-      probabilityPercent: Number(r.probability_percent || 0),
-      isActive: !!r.is_active,
-      applicableGame: r.applicable_game,
-      terms: r.terms || '',
-      color: r.color || '#E8C477',
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
+    return data.map(mapCloudReward);
   } catch {
     return [];
   }
@@ -672,6 +699,11 @@ export async function syncCloudRewardsToLocalDb(database: any) {
     const { data, error } = await client.from('rewards').select('*');
     if (error || !data || data.length === 0) return;
 
+    // Purge outdated seeded placeholder rewards so they NEVER override live configured odds
+    try {
+      database.exec("DELETE FROM rewards WHERE id LIKE 'rew-%';");
+    } catch {}
+
     const stmt = database.prepare(`
       INSERT OR REPLACE INTO rewards (
         id, campaign_id, name, description, reward_type, monetary_value_paise,
@@ -682,6 +714,7 @@ export async function syncCloudRewardsToLocalDb(database: any) {
     `);
 
     for (const r of data) {
+      // 1. Insert with original Supabase campaign ID
       stmt.run(
         r.id,
         r.campaign_id,
@@ -704,6 +737,32 @@ export async function syncCloudRewardsToLocalDb(database: any) {
         r.created_at,
         r.updated_at
       );
+
+      // 2. Also map to local campaign 'cmp-festive-navratri-2026' so queries by local campaign ID find the live cloud rewards
+      if (r.campaign_id !== 'cmp-festive-navratri-2026') {
+        stmt.run(
+          `cmp-${r.id}`,
+          'cmp-festive-navratri-2026',
+          r.name,
+          r.description || '',
+          r.reward_type,
+          Number(r.monetary_value_paise || 0),
+          Number(r.discount_percentage || 0),
+          Number(r.min_purchase_paise || 0),
+          Number(r.max_discount_paise || 0),
+          Number(r.total_inventory || 0),
+          Number(r.reserved_inventory || 0),
+          Number(r.issued_count || 0),
+          Number(r.redeemed_count || 0),
+          Number(r.probability_percent || 0),
+          r.is_active ? 1 : 0,
+          r.applicable_game,
+          r.terms || '',
+          r.color || '#E8C477',
+          r.created_at,
+          r.updated_at
+        );
+      }
     }
   } catch (err) {
     console.warn('Sync cloud rewards to local db error:', err);
@@ -726,7 +785,10 @@ export async function updateCloudReward(id: string, updates: Partial<any>) {
       'rew-008': '33333333-3333-3333-3333-000000000008',
     };
 
-    const targetId = REWARD_ID_MAP[id] || id;
+    let targetId = REWARD_ID_MAP[id] || id;
+    if (typeof targetId === 'string' && targetId.startsWith('cmp-')) {
+      targetId = targetId.replace(/^cmp-/, '');
+    }
 
     const patch: any = {
       updated_at: new Date().toISOString(),
@@ -788,4 +850,82 @@ export async function saveRewardToCloud(reward: any) {
     console.warn('Save reward to cloud error:', err);
   }
 }
+
+export async function getCyclePlayCounts(batchSize = 100): Promise<{
+  totalPlays: number;
+  currentCycleCount: number;
+  cycleIssued: Record<string, number>;
+}> {
+  const client = getSupabase();
+  const normalize = (id: string) => {
+    if (!id) return '';
+    const clean = id.replace(/^cmp-/, '');
+    const REWARD_MAP: Record<string, string> = {
+      'rew-001': '33333333-3333-3333-3333-000000000001',
+      'rew-002': '33333333-3333-3333-3333-000000000002',
+      'rew-003': '33333333-3333-3333-3333-000000000003',
+      'rew-004': '33333333-3333-3333-3333-000000000004',
+      'rew-005': '33333333-3333-3333-3333-000000000005',
+      'rew-006': '33333333-3333-3333-3333-000000000006',
+      'rew-007': '33333333-3333-3333-3333-000000000007',
+      'rew-008': '33333333-3333-3333-3333-000000000008',
+    };
+    return REWARD_MAP[clean] || clean;
+  };
+
+  const cycleIssued: Record<string, number> = {};
+
+  if (client) {
+    try {
+      const { count, error } = await client
+        .from('game_plays')
+        .select('*', { count: 'exact', head: true });
+
+      if (!error && typeof count === 'number') {
+        const totalPlays = count;
+        const currentCycleCount = totalPlays % batchSize;
+
+        if (currentCycleCount > 0) {
+          const { data } = await client
+            .from('game_plays')
+            .select('reward_id')
+            .order('played_at', { ascending: false })
+            .limit(currentCycleCount);
+
+          if (data) {
+            for (const row of data) {
+              const normId = normalize(row.reward_id);
+              cycleIssued[normId] = (cycleIssued[normId] || 0) + 1;
+            }
+          }
+        }
+        return { totalPlays, currentCycleCount, cycleIssued };
+      }
+    } catch (e) {
+      console.warn('Cloud cycle play count error:', e);
+    }
+  }
+
+  // Fallback to SQLite
+  try {
+    const { db } = await import('./index');
+    const database = db.getRawDb();
+    const countRow = database.prepare('SELECT COUNT(*) as c FROM game_plays').get() as { c: number };
+    const totalPlays = countRow?.c || 0;
+    const currentCycleCount = totalPlays % batchSize;
+    if (currentCycleCount > 0) {
+      const rows = database
+        .prepare('SELECT reward_id FROM game_plays ORDER BY played_at DESC LIMIT ?')
+        .all(currentCycleCount) as { reward_id: string }[];
+      for (const row of rows) {
+        const normId = normalize(row.reward_id);
+        cycleIssued[normId] = (cycleIssued[normId] || 0) + 1;
+      }
+    }
+    return { totalPlays, currentCycleCount, cycleIssued };
+  } catch {
+    return { totalPlays: 0, currentCycleCount: 0, cycleIssued: {} };
+  }
+}
+
 

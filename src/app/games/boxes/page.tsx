@@ -12,9 +12,11 @@ export default async function MysteryBoxesPage() {
   let boxRemaining = 1;
   let user: { id: string; name: string } | null = null;
 
+  let session: any = null;
+
   try {
     const campaign = db.getActiveCampaign();
-    const session = await getSession();
+    session = await getSession();
 
     if (session) {
       user = { id: session.id, name: session.fullName };
@@ -38,7 +40,7 @@ export default async function MysteryBoxesPage() {
 
   return (
     <div className="min-h-screen bg-festive-radiant flex flex-col text-[#FFFDF7]">
-      <Navbar />
+      <Navbar initialUser={session} />
       <main className="flex-1 py-6">
         <MysteryBoxesGame 
           initialRemainingPlays={boxRemaining}

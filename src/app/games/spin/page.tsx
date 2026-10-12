@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function SpinWheelPage() {
   let spinRewards: any[] = [];
   let spinRemaining = 1;
+  let session = null;
 
   try {
     try {
@@ -18,7 +19,7 @@ export default async function SpinWheelPage() {
     } catch {}
 
     const campaign = db.getActiveCampaign();
-    const session = await getSession();
+    session = await getSession();
 
     if (campaign) {
       let rawRewards = db.getRewardsByCampaign(campaign.id, 'spin_wheel');
@@ -57,7 +58,7 @@ export default async function SpinWheelPage() {
 
   return (
     <div className="min-h-screen bg-festive-radiant flex flex-col text-[#FFFDF7]">
-      <Navbar />
+      <Navbar initialUser={session} />
       <main className="flex-1 py-6">
         <SpinWheelGame 
           initialRewards={spinRewards}

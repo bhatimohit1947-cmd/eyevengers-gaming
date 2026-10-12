@@ -69,7 +69,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-festive-radiant flex flex-col text-[#FFFDF7]">
-      <Navbar />
+      <Navbar initialUser={session} />
 
       <main className="flex-1">
         

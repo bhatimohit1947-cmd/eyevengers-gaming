@@ -41,7 +41,17 @@ export async function POST(req: Request) {
         );
       }
 
-      const user = db.getUserByMobile(normalizedMobile);
+      let user = db.getUserByMobile(normalizedMobile);
+      if (!user) {
+        const cloudUser = await getProfileFromCloudByMobile(normalizedMobile);
+        if (cloudUser && cloudUser.passwordHash) {
+          try {
+            db.saveUserLocally(cloudUser as any);
+          } catch {}
+          user = db.getUserByMobile(normalizedMobile);
+        }
+      }
+
       if (!user) {
         // Safe message: do not reveal user existence
         return NextResponse.json({

@@ -8,7 +8,9 @@ import {
   saveGamePlayToCloud, 
   getCloudUserPlaysCount, 
   syncCloudRewardsToLocalDb, 
-  getCloudRewards 
+  getCloudRewards,
+  getCyclePlayCounts,
+  getCloudUserVouchers 
 } from '@/lib/db/supabaseSync';
 
 import { checkRateLimit, acquirePlayLock, releasePlayLock } from '@/lib/security/rateLimit';
@@ -86,9 +88,9 @@ export async function POST(req: Request) {
       await syncCloudRewardsToLocalDb(db.getRawDb());
     } catch {}
 
-    let candidateRewards = db.getRewardsByCampaign(campaign.id, gameType);
+    let candidateRewards: any[] = [];
     try {
-      const allCloud = await getCloudRewards(campaign.id);
+      const allCloud = await getCloudRewards();
       if (allCloud && allCloud.length > 0) {
         const filtered = allCloud.filter(r => r.isActive && (r.applicableGame === gameType || r.applicableGame === 'both'));
         if (filtered.length > 0) {
@@ -98,14 +100,58 @@ export async function POST(req: Request) {
     } catch {}
 
     if (candidateRewards.length === 0) {
+      candidateRewards = db.getRewardsByCampaign(campaign.id, gameType);
+    }
+
+    if (candidateRewards.length === 0) {
       return NextResponse.json(
         { error: 'No active rewards are configured for this game.' },
         { status: 500 }
       );
     }
 
-    // 4. Server-Side Reward Allocation using updated winning odds
-    const allocation = allocateReward(candidateRewards, 'weighted_random');
+    // 4. Cross-Game Complimentary Allocation:
+    // If customer already won Free Frame in Wheel or Box, guarantee second game gives ₹100 or ₹200 voucher!
+    let alreadyWonFreeFrame = false;
+    try {
+      const [localVouchers, cloudVouchers] = await Promise.all([
+        db.getUserVouchers(session.id, session.mobile),
+        getCloudUserVouchers(session.id, session.mobile),
+      ]);
+      const allUserVouchers = [...localVouchers, ...cloudVouchers];
+      alreadyWonFreeFrame = allUserVouchers.some(v => {
+        const name = (v.rewardName || v.rewards?.name || '').toLowerCase();
+        const rid = (v.rewardId || v.reward_id || '').toLowerCase();
+        return name.includes('frame') || rid.includes('000000000005') || rid.includes('rew-005');
+      });
+    } catch (e) {
+      console.warn('Error checking user previous vouchers:', e);
+    }
+
+    let eligibleCandidates = candidateRewards;
+    if (alreadyWonFreeFrame) {
+      const discountVouchers = candidateRewards.filter(r => {
+        const name = (r.name || '').toLowerCase();
+        return (name.includes('100') || name.includes('200')) && (r.totalInventory - r.issuedCount > 0);
+      });
+      if (discountVouchers.length > 0) {
+        eligibleCandidates = discountVouchers;
+      } else {
+        const nonFrame = candidateRewards.filter(r => !(r.name || '').toLowerCase().includes('frame'));
+        if (nonFrame.length > 0) eligibleCandidates = nonFrame;
+      }
+    }
+
+    // 5. Server-Side Reward Allocation using 100-user Batch Quota Engine
+    const cycleContext = await getCyclePlayCounts(100);
+    const allocation = allocateReward(
+      eligibleCandidates, 
+      alreadyWonFreeFrame ? 'weighted_random' : 'batch_quota', 
+      {
+        batchSize: 100,
+        cycleIssued: cycleContext.cycleIssued,
+      }
+    );
     if (!allocation) {
       return NextResponse.json(
         { error: 'Reward inventory is currently exhausted. Please check back soon!' },
@@ -113,7 +159,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 5. Atomic Transaction: record play, decrement stock, issue voucher
+    // 6. Atomic Transaction: record play, decrement stock, issue voucher
     const result = db.recordPlayAndIssueVoucher({
       userId: session.id,
       userMobile: session.mobile,
@@ -121,6 +167,7 @@ export async function POST(req: Request) {
       campaignId: campaign.id,
       gameType,
       rewardId: allocation.reward.id,
+      rewardData: allocation.reward,
       expiryDays: 14,
     });
 

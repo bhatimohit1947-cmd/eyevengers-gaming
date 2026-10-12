@@ -18,27 +18,35 @@ import {
 import { DandiyaIcon } from '../ui/FestiveMotifs';
 import { FestiveLights } from '../ui/FestiveLights';
 
-export function Navbar() {
-  const [user, setUser] = useState<SessionUser | null>(null);
+export function Navbar({ initialUser }: { initialUser?: SessionUser | null }) {
+  const [user, setUser] = useState<SessionUser | null>(initialUser ?? null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (initialUser !== undefined) {
+      setUser(initialUser);
+    }
+  }, [initialUser]);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
         if (data.user) setUser(data.user);
+        else if (initialUser === undefined) setUser(null);
       })
       .catch(() => {});
-  }, []);
+  }, [initialUser]);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
     setUser(null);
     setUserDropdownOpen(false);
-    router.push('/');
-    router.refresh();
+    window.location.href = '/';
   };
 
   return (

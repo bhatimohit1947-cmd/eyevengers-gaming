@@ -311,12 +311,12 @@ function seedInitialData(db: DatabaseSync) {
       type: 'fixed_discount',
       value: 10000,
       pct: 0,
-      minPurchase: 99900,
+      minPurchase: 9900,
       maxDiscount: 10000,
       stock: 500,
-      prob: 30.0,
+      prob: 5.0,
       color: '#FF5722',
-      terms: 'Valid on purchases above ₹999 at EYEVENGERS showroom.'
+      terms: 'Valid on purchases above ₹99 at EYEVENGERS showroom.'
     },
     {
       id: 'rew-002',
@@ -325,12 +325,12 @@ function seedInitialData(db: DatabaseSync) {
       type: 'percentage_discount',
       value: 0,
       pct: 10.0,
-      minPurchase: 149900,
+      minPurchase: 0,
       maxDiscount: 50000,
       stock: 400,
-      prob: 25.0,
+      prob: 1.0,
       color: '#E91E63',
-      terms: '10% discount on total eyewear bill exceeding ₹1,499.'
+      terms: '10% discount on total eyewear bill at EYEVENGERS showroom.'
     },
     {
       id: 'rew-003',
@@ -339,12 +339,12 @@ function seedInitialData(db: DatabaseSync) {
       type: 'fixed_discount',
       value: 20000,
       pct: 0,
-      minPurchase: 199900,
+      minPurchase: 79900,
       maxDiscount: 20000,
       stock: 300,
-      prob: 18.0,
+      prob: 10.0,
       color: '#00B0FF',
-      terms: 'Valid on purchases above ₹1,999 at EYEVENGERS showroom.'
+      terms: 'Valid on purchases above ₹799 at EYEVENGERS showroom.'
     },
     {
       id: 'rew-004',
@@ -356,7 +356,7 @@ function seedInitialData(db: DatabaseSync) {
       minPurchase: 0,
       maxDiscount: 99900,
       stock: 100,
-      prob: 10.0,
+      prob: 1.0,
       color: '#FFB300',
       terms: 'Choose from designated festive collection at showroom.'
     },
@@ -370,7 +370,7 @@ function seedInitialData(db: DatabaseSync) {
       minPurchase: 99900,
       maxDiscount: 79900,
       stock: 150,
-      prob: 8.0,
+      prob: 53.0,
       color: '#00C853',
       terms: 'Valid on purchase of prescription lenses above ₹999.'
     },
@@ -381,12 +381,12 @@ function seedInitialData(db: DatabaseSync) {
       type: 'fixed_discount',
       value: 50000,
       pct: 0,
-      minPurchase: 399900,
+      minPurchase: 149900,
       maxDiscount: 50000,
       stock: 50,
-      prob: 5.0,
+      prob: 27.0,
       color: '#8E24AA',
-      terms: 'Valid on purchases above ₹3,999 at EYEVENGERS showroom.'
+      terms: 'Valid on purchases above ₹1,499 at EYEVENGERS showroom.'
     },
     {
       id: 'rew-007',
@@ -398,7 +398,7 @@ function seedInitialData(db: DatabaseSync) {
       minPurchase: 0,
       maxDiscount: 199900,
       stock: 25,
-      prob: 2.0,
+      prob: 1.0,
       color: '#FF1744',
       terms: 'Grand prize! Complete prescription eyeglasses set from festive catalog.'
     },
@@ -452,8 +452,20 @@ export const db = {
   // Profiles & Auth
   getUserByMobile(mobile: string): (UserProfile & { passwordHash: string }) | null {
     const database = getDb();
-    const stmt = database.prepare('SELECT * FROM profiles WHERE mobile = ?');
-    const row = stmt.get(mobile) as Record<string, unknown> | undefined;
+    const cleaned = mobile.replace(/[\s\-()]/g, '');
+    const digits10 = cleaned.replace(/\D/g, '').slice(-10);
+    const variants = Array.from(new Set([
+      mobile,
+      cleaned,
+      `+91${digits10}`,
+      digits10,
+      `91${digits10}`,
+      `0${digits10}`,
+    ])).filter(Boolean);
+
+    const placeholders = variants.map(() => '?').join(', ');
+    const stmt = database.prepare(`SELECT * FROM profiles WHERE mobile IN (${placeholders}) LIMIT 1`);
+    const row = stmt.get(...variants) as Record<string, unknown> | undefined;
     if (!row) return null;
     return {
       id: row.id as string,
@@ -948,6 +960,7 @@ export const db = {
     campaignId: string;
     gameType: 'spin_wheel' | 'mystery_box';
     rewardId: string;
+    rewardData?: any;
     expiryDays?: number;
   }): { success: boolean; error?: string; voucher?: Voucher; gamePlay?: GamePlay } {
     const database = getDb();
@@ -1009,8 +1022,44 @@ export const db = {
       const stockStmt = database.prepare('SELECT id, total_inventory, issued_count FROM rewards WHERE id = ?');
       let stockRow = stockStmt.get(params.rewardId) as { id: string; total_inventory: number; issued_count: number } | undefined;
       
+      // If reward exists in cloud but not yet in SQLite, ensure it exists with full details
+      if (!stockRow && params.rewardData) {
+        try {
+          database.prepare(`
+            INSERT OR REPLACE INTO rewards (
+              id, campaign_id, name, description, reward_type, monetary_value_paise,
+              discount_percentage, min_purchase_paise, max_discount_paise, total_inventory,
+              reserved_inventory, issued_count, redeemed_count, probability_percent, is_active,
+              applicable_game, terms, color, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            params.rewardData.id,
+            params.campaignId,
+            params.rewardData.name,
+            params.rewardData.description || '',
+            params.rewardData.rewardType || params.rewardData.reward_type || 'fixed_discount',
+            Number(params.rewardData.monetaryValuePaise || params.rewardData.monetary_value_paise || 0),
+            Number(params.rewardData.discountPercentage || params.rewardData.discount_percentage || 0),
+            Number(params.rewardData.minPurchasePaise || params.rewardData.min_purchase_paise || 0),
+            Number(params.rewardData.maxDiscountPaise || params.rewardData.max_discount_paise || 0),
+            Number(params.rewardData.totalInventory || params.rewardData.total_inventory || 9999),
+            Number(params.rewardData.reservedInventory || params.rewardData.reserved_inventory || 0),
+            Number(params.rewardData.issuedCount || params.rewardData.issued_count || 0),
+            Number(params.rewardData.redeemedCount || params.rewardData.redeemed_count || 0),
+            Number(params.rewardData.probabilityPercent || params.rewardData.probability_percent || 0),
+            1,
+            params.rewardData.applicableGame || params.rewardData.applicable_game || 'both',
+            params.rewardData.terms || '',
+            params.rewardData.color || '#E8C477',
+            nowIso,
+            nowIso
+          );
+          stockRow = stockStmt.get(params.rewardId) as { id: string; total_inventory: number; issued_count: number } | undefined;
+        } catch {}
+      }
+
       if (!stockRow) {
-        // Fallback to active reward in this campaign
+        // Fallback to active reward in this campaign only if no rewardData was given
         stockRow = database.prepare('SELECT id, total_inventory, issued_count FROM rewards WHERE campaign_id = ? AND is_active = 1 LIMIT 1').get(params.campaignId) as { id: string; total_inventory: number; issued_count: number } | undefined;
         if (stockRow) {
           params.rewardId = stockRow.id;

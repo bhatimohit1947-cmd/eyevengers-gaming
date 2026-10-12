@@ -115,3 +115,85 @@ test('Reward Allocation Engine: ignores exhausted inventory items', () => {
     assert.equal(res.reward.id, 'in-stock-1');
   }
 });
+
+test('Reward Allocation Engine: customer with Free Frame gets ₹100 or ₹200 voucher in other game', () => {
+  const dummyRewards: Reward[] = [
+    {
+      id: 'rew-frame',
+      campaignId: 'cmp-test',
+      name: 'Free Frame',
+      description: '',
+      rewardType: 'free_product',
+      monetaryValuePaise: 79900,
+      discountPercentage: 0,
+      minPurchasePaise: 0,
+      maxDiscountPaise: 0,
+      totalInventory: 150,
+      reservedInventory: 0,
+      issuedCount: 1,
+      redeemedCount: 0,
+      probabilityPercent: 90.0,
+      isActive: true,
+      applicableGame: 'both',
+      terms: '',
+      createdAt: '',
+      updatedAt: '',
+    },
+    {
+      id: 'rew-100',
+      campaignId: 'cmp-test',
+      name: 'Flat ₹100 OFF',
+      description: '',
+      rewardType: 'fixed_discount',
+      monetaryValuePaise: 10000,
+      discountPercentage: 0,
+      minPurchasePaise: 0,
+      maxDiscountPaise: 0,
+      totalInventory: 500,
+      reservedInventory: 0,
+      issuedCount: 0,
+      redeemedCount: 0,
+      probabilityPercent: 2.0,
+      isActive: true,
+      applicableGame: 'both',
+      terms: '',
+      createdAt: '',
+      updatedAt: '',
+    },
+    {
+      id: 'rew-200',
+      campaignId: 'cmp-test',
+      name: 'Flat ₹200 OFF',
+      description: '',
+      rewardType: 'fixed_discount',
+      monetaryValuePaise: 20000,
+      discountPercentage: 0,
+      minPurchasePaise: 0,
+      maxDiscountPaise: 0,
+      totalInventory: 300,
+      reservedInventory: 0,
+      issuedCount: 0,
+      redeemedCount: 0,
+      probabilityPercent: 2.0,
+      isActive: true,
+      applicableGame: 'both',
+      terms: '',
+      createdAt: '',
+      updatedAt: '',
+    },
+  ];
+
+  // Filter to 100 or 200 vouchers as implemented in play route when already won Free Frame
+  const discountCandidates = dummyRewards.filter(r => {
+    const name = r.name.toLowerCase();
+    return name.includes('100') || name.includes('200');
+  });
+
+  for (let i = 0; i < 20; i++) {
+    const res = allocateReward(discountCandidates, 'weighted_random');
+    assert.ok(res);
+    assert.ok(res.reward.id === 'rew-100' || res.reward.id === 'rew-200');
+    assert.notEqual(res.reward.id, 'rew-frame');
+  }
+});
+

@@ -61,8 +61,7 @@ function RegisterForm() {
         return;
       }
 
-      router.push(redirect);
-      router.refresh();
+      window.location.href = redirect || '/';
     } catch {
       setErrorMessage('Unable to connect to server. Please try again.');
       setLoading(false);

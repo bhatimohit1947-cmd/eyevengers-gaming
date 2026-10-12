@@ -37,14 +37,13 @@ function LoginForm() {
         return;
       }
 
+      let target = redirect || '/';
       if (data.user?.role === 'admin') {
-        router.push('/admin');
-      } else if (data.user?.role === 'staff' && redirect === '/') {
-        router.push('/staff/redeem');
-      } else {
-        router.push(redirect);
+        target = '/admin';
+      } else if (data.user?.role === 'staff' && (redirect === '/' || !redirect)) {
+        target = '/staff/redeem';
       }
-      router.refresh();
+      window.location.href = target;
     } catch {
       setErrorMessage('Connection error. Please try again.');
       setLoading(false);

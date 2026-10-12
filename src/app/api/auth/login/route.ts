@@ -15,7 +15,7 @@ const loginSchema = z.object({
 export async function POST(req: Request) {
   try {
     const ip = getClientIp(req);
-    const ipLimit = checkRateLimit(`login:ip:${ip}`, 15, 60 * 1000);
+    const ipLimit = checkRateLimit(`login:ip:${ip}`, 30, 60 * 1000);
     if (!ipLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many login attempts from this network. Please wait a minute before trying again.' },
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const { mobile, password } = parsed.data;
     const normalizedMobile = normalizeMobile(mobile);
 
-    const mobileLimit = checkRateLimit(`login:mobile:${normalizedMobile}`, 8, 60 * 1000);
+    const mobileLimit = checkRateLimit(`login:mobile:${normalizedMobile}`, 20, 60 * 1000);
     if (!mobileLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many login attempts for this mobile number. Please wait a minute.' },
@@ -41,14 +41,18 @@ export async function POST(req: Request) {
       );
     }
 
-    let user = db.getUserByMobile(normalizedMobile);
+    // 1. Look up user in local SQLite and Supabase Cloud
+    let user = db.getUserByMobile(normalizedMobile) || db.getUserByMobile(mobile);
     let cloudUser = await getProfileFromCloudByMobile(normalizedMobile);
+    if (!cloudUser && normalizedMobile !== mobile) {
+      cloudUser = await getProfileFromCloudByMobile(mobile);
+    }
 
     if (cloudUser && cloudUser.passwordHash) {
       try {
         db.saveUserLocally(cloudUser as any);
       } catch {}
-      // Cloud user UUID is the single source of truth across all devices and servers
+      // Cloud user is single source of truth across all devices and servers
       user = cloudUser;
     }
 
@@ -74,6 +78,21 @@ export async function POST(req: Request) {
 
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid mobile number or password.' }, { status: 401 });
+    }
+
+    // If verified user exists locally but not in Supabase cloud, automatically back-sync
+    if (isValid && !cloudUser) {
+      try {
+        const { saveProfileToCloud } = await import('@/lib/db/supabaseSync');
+        await saveProfileToCloud({
+          id: user.id,
+          mobile: user.mobile,
+          fullName: user.fullName,
+          passwordHash: user.passwordHash,
+          role: user.role,
+          status: user.status,
+        });
+      } catch {}
     }
 
     await setSessionCookie({
