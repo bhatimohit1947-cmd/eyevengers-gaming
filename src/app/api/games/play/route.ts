@@ -168,6 +168,7 @@ export async function POST(req: Request) {
       gameType,
       rewardId: allocation.reward.id,
       rewardData: allocation.reward,
+      expiryDate: new Date('2026-10-25T23:59:59+05:30').toISOString(),
       expiryDays: 14,
     });
 

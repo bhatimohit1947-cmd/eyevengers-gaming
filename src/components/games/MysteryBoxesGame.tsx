@@ -252,6 +252,7 @@ export function MysteryBoxesGame({
           <li>1 Mystery Box opening eligible per customer during this campaign.</li>
           <li>Every single box holds a real verified eyewear voucher.</li>
           <li>All prizes are cryptographically assigned server-side for fairness.</li>
+          <li>All vouchers are valid to avail until 25th October 2026 at our showroom.</li>
           <li>Download or save your digital PDF voucher to redeem at our Jodhpur showroom.</li>
         </ul>
       </div>
@@ -282,6 +283,9 @@ export function MysteryBoxesGame({
               </div>
               <div className="text-[11px] text-[#E8C477] font-mono mt-2 font-bold tracking-wider">
                 VOUCHER CODE: {wonReward.voucherCode}
+              </div>
+              <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#00E676]/15 border border-[#00E676]/40 text-[#00E676] text-xs font-bold">
+                <span>Valid to Avail Until: 25 Oct 2026</span>
               </div>
             </div>
 

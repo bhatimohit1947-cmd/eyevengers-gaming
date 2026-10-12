@@ -962,6 +962,7 @@ export const db = {
     rewardId: string;
     rewardData?: any;
     expiryDays?: number;
+    expiryDate?: string;
   }): { success: boolean; error?: string; voucher?: Voucher; gamePlay?: GamePlay } {
     const database = getDb();
 
@@ -990,7 +991,9 @@ export const db = {
     const gamePlayId = 'gpl-' + crypto.randomUUID();
     const voucherId = 'vch-' + crypto.randomUUID();
     const nowIso = now.toISOString();
-    const expiryDate = new Date(now.getTime() + (params.expiryDays || 14) * 24 * 60 * 60 * 1000).toISOString();
+    // Fixed Festive Campaign Expiry Date: 25 Oct 2026 (23:59:59 IST)
+    const fixedCampaignExpiry = new Date('2026-10-25T23:59:59+05:30').toISOString();
+    const expiryDate = params.expiryDate || fixedCampaignExpiry;
     
     // Human readable unique ticket voucher code e.g. EYE-NAV-849201
     const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase();

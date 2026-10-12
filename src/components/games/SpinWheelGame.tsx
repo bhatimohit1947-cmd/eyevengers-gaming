@@ -428,7 +428,7 @@ export function SpinWheelGame({
           <li>1 Spin eligible per customer during the festive campaign period.</li>
           <li>All rewards generate an authentic digital voucher with an instant showroom QR code.</li>
           <li>Showroom redemption valid at EYEVENGERS, 137, Jhanwar Rd, Bhadu Market, Jodhpur.</li>
-          <li>Vouchers are valid for 14 calendar days from the date of issue.</li>
+          <li>All vouchers are valid to avail until 25th October 2026 at our showroom.</li>
         </ul>
       </div>
 
@@ -459,6 +459,9 @@ export function SpinWheelGame({
               </div>
               <div className="text-[11px] text-[#FF5149] font-mono mt-2 font-bold tracking-wider">
                 VOUCHER CODE: {wonReward.voucherCode}
+              </div>
+              <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#00E676]/15 border border-[#00E676]/40 text-[#00E676] text-xs font-bold">
+                <span>Valid to Avail Until: 25 Oct 2026</span>
               </div>
             </div>
 
