@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { UserProfile } from '../types';
+import { UserProfile, RedemptionRecord } from '../types';
 
 let supabaseClient: SupabaseClient | null = null;
 
@@ -448,11 +448,21 @@ export async function getCloudVoucherByCodeOrToken(codeOrToken: string): Promise
   if (!client) return null;
 
   try {
-    const { data, error } = await client
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const clean = codeOrToken.replace(/^vch-/, '');
+    const isUuid = uuidRegex.test(clean);
+
+    let query = client
       .from('vouchers')
-      .select('*, customer:profiles!user_id(id, full_name, mobile), rewards(*)')
-      .or(`voucher_code.eq.${codeOrToken},qr_token.eq.${codeOrToken}`)
-      .maybeSingle();
+      .select('*, customer:profiles!user_id(id, full_name, mobile), rewards(*)');
+
+    if (isUuid) {
+      query = query.or(`id.eq.${clean},voucher_code.eq.${codeOrToken},qr_token.eq.${codeOrToken}`);
+    } else {
+      query = query.or(`voucher_code.eq.${codeOrToken},qr_token.eq.${codeOrToken}`);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     if (error || !data) return null;
 
@@ -498,20 +508,107 @@ export async function getCloudVoucherByCodeOrToken(codeOrToken: string): Promise
 }
 
 export async function redeemCloudVoucher(
-  voucherId: string,
-  staffId: string,
-  billReference?: string,
-  purchaseAmountPaise?: number
-) {
+  voucherIdOrParams: string | {
+    voucherId: string;
+    voucherCode?: string;
+    staffId: string;
+    staff?: { id: string; mobile?: string; fullName?: string; role?: string };
+    billReference?: string;
+    purchaseAmountPaise?: number;
+    showroomLocation?: string;
+  },
+  legacyStaffId?: string,
+  legacyBillRef?: string,
+  legacyPurchaseAmount?: number,
+  legacyShowroomLoc?: string
+): Promise<{ success: boolean; error?: string; voucher?: any }> {
   const client = getSupabase();
-  if (!client) return;
+  if (!client) return { success: true };
 
   try {
+    const isObject = typeof voucherIdOrParams === 'object';
+    const voucherId = isObject ? voucherIdOrParams.voucherId : voucherIdOrParams;
+    const voucherCode = isObject ? voucherIdOrParams.voucherCode : undefined;
+    const staffId = isObject ? voucherIdOrParams.staffId : legacyStaffId!;
+    const staff = isObject ? voucherIdOrParams.staff : undefined;
+    const billReference = isObject ? voucherIdOrParams.billReference : legacyBillRef;
+    const purchaseAmountPaise = isObject ? voucherIdOrParams.purchaseAmountPaise : legacyPurchaseAmount;
+    const showroomLocation = (isObject ? voucherIdOrParams.showroomLocation : legacyShowroomLoc) || 'Bhadu Market Showroom, Jodhpur';
+
     const vchId = toCloudUUID(voucherId);
-    const stfId = toCloudUUID(staffId);
+    let stfId = toCloudUUID(staffId);
     const now = new Date().toISOString();
 
-    await client
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let query = client
+      .from('vouchers')
+      .select('*, customer:profiles!user_id(id, full_name, mobile), rewards(*)');
+
+    const cleanVoucherId = voucherId.replace(/^vch-/, '');
+    const isIdUuid = uuidRegex.test(cleanVoucherId);
+    const targetCode = voucherCode || (!isIdUuid ? voucherId : undefined);
+
+    if (isIdUuid && targetCode) {
+      query = query.or(`id.eq.${cleanVoucherId},voucher_code.eq.${targetCode}`);
+    } else if (isIdUuid) {
+      query = query.eq('id', cleanVoucherId);
+    } else {
+      query = query.or(`voucher_code.eq.${voucherId},qr_token.eq.${voucherId}`);
+    }
+
+    const { data: vch, error: fetchErr } = await query.maybeSingle();
+
+    if (fetchErr) {
+      console.warn('[Supabase] Error fetching voucher for redeem:', fetchErr.message);
+    }
+
+    if (!vch) {
+      return { success: false, error: 'Voucher does not exist in cloud database.' };
+    }
+
+    if (vch.status === 'redeemed') {
+      return { success: false, error: 'Voucher has already been redeemed earlier.' };
+    }
+
+    if (vch.status === 'cancelled') {
+      return { success: false, error: 'Voucher has been revoked or cancelled.' };
+    }
+
+    if (vch.expiry_date && new Date(vch.expiry_date) < new Date()) {
+      return { success: false, error: 'Voucher has expired.' };
+    }
+
+    // 2. Ensure staff profile exists in cloud profiles table to satisfy foreign keys
+    if (staff || staffId) {
+      try {
+        const staffMobile = staff?.mobile || '+919876500002';
+        const { data: existingStaff } = await client
+          .from('profiles')
+          .select('id')
+          .or(`id.eq.${stfId},mobile.eq.${staffMobile}`)
+          .maybeSingle();
+
+        if (existingStaff) {
+          stfId = existingStaff.id;
+        } else {
+          await client.from('profiles').upsert({
+            id: stfId,
+            mobile: staffMobile,
+            full_name: staff?.fullName || 'Showroom Staff',
+            password_hash: '',
+            role: staff?.role || 'staff',
+            status: 'active',
+            created_at: now,
+            updated_at: now,
+          }, { onConflict: 'id' });
+        }
+      } catch (err) {
+        console.warn('[Supabase] Staff profile ensure error:', err);
+      }
+    }
+
+    // 3. Update voucher status in cloud
+    const { error: updErr } = await client
       .from('vouchers')
       .update({
         status: 'redeemed',
@@ -520,20 +617,158 @@ export async function redeemCloudVoucher(
         bill_reference: billReference || null,
         purchase_amount_paise: purchaseAmountPaise || null,
       })
-      .eq('id', vchId);
+      .eq('id', vch.id);
 
-    // Also record in redemptions table
-    await client.from('redemptions').insert({
+    if (updErr) {
+      console.error('[Supabase] Voucher status update failed:', updErr.message);
+      return { success: false, error: 'Failed to update cloud voucher status: ' + updErr.message };
+    }
+
+    // 4. Insert into cloud redemptions table
+    const { error: rdmErr } = await client.from('redemptions').insert({
       id: crypto.randomUUID(),
-      voucher_id: vchId,
+      voucher_id: vch.id,
+      voucher_code: vch.voucher_code,
       staff_id: stfId,
       bill_reference: billReference || null,
       purchase_amount_paise: purchaseAmountPaise || 0,
-      discount_applied_paise: 0,
       redeemed_at: now,
+      showroom_location: showroomLocation,
     });
-  } catch (err) {
+
+    if (rdmErr) {
+      console.warn('[Supabase] Cloud redemption log insert warning:', rdmErr.message);
+    }
+
+    // Map voucher response
+    const reward = vch.rewards;
+    const customer = vch.customer;
+    const monetaryPaise = reward?.monetary_value_paise || 0;
+    const discountPct = reward?.discount_percentage || 0;
+    let rewardValueDisplay = '';
+    if (monetaryPaise > 0) {
+      rewardValueDisplay = `₹${(monetaryPaise / 100).toLocaleString('en-IN')}`;
+    } else if (discountPct > 0) {
+      rewardValueDisplay = `${discountPct}% OFF`;
+    } else {
+      rewardValueDisplay = reward?.name || 'Festive Reward';
+    }
+
+    const redeemedVoucher = {
+      id: vch.id,
+      voucherCode: vch.voucher_code,
+      userId: vch.user_id,
+      rewardId: REWARD_REVERSE_MAP[vch.reward_id] || vch.reward_id,
+      campaignId: vch.campaign_id,
+      issueDate: vch.issue_date || vch.created_at,
+      expiryDate: vch.expiry_date,
+      status: 'redeemed',
+      qrToken: vch.qr_token,
+      redeemedAt: now,
+      redeemedByStaffId: stfId,
+      billReference: billReference || undefined,
+      purchaseAmountPaise: purchaseAmountPaise || undefined,
+      createdAt: vch.created_at,
+      rewardName: reward?.name || 'Festive Reward',
+      rewardType: reward?.reward_type || 'fixed_discount',
+      rewardValueDisplay,
+      minPurchasePaise: reward?.min_purchase_paise || 0,
+      terms: reward?.terms || '',
+      customerName: customer?.full_name || 'Valued Customer',
+      customerMobile: customer?.mobile || '',
+    };
+
+    return {
+      success: true,
+      voucher: redeemedVoucher,
+    };
+  } catch (err: any) {
     console.warn('Cloud voucher redemption sync error:', err);
+    return { success: false, error: err?.message || 'Server error during cloud redemption' };
+  }
+}
+
+export async function getCloudRecentRedemptions(limit = 10): Promise<RedemptionRecord[]> {
+  const client = getSupabase();
+  if (!client) return [];
+
+  try {
+    // 1. Try querying redemptions table
+    const { data, error } = await client
+      .from('redemptions')
+      .select(`
+        id,
+        voucher_id,
+        voucher_code,
+        staff_id,
+        bill_reference,
+        purchase_amount_paise,
+        redeemed_at,
+        showroom_location,
+        staff:profiles!staff_id(id, full_name),
+        voucher:vouchers!voucher_id(
+          id,
+          voucher_code,
+          user_id,
+          customer:profiles!user_id(id, full_name, mobile),
+          rewards(id, name)
+        )
+      `)
+      .order('redeemed_at', { ascending: false })
+      .limit(limit);
+
+    if (!error && data && data.length > 0) {
+      return data.map((r: any) => ({
+        id: r.id,
+        voucherId: r.voucher_id,
+        voucherCode: r.voucher_code,
+        customerName: r.voucher?.customer?.full_name || 'Customer',
+        rewardName: r.voucher?.rewards?.name || 'Festive Reward',
+        staffId: r.staff?.id || r.staff_id,
+        staffName: r.staff?.full_name || 'Showroom Staff',
+        billReference: r.bill_reference || undefined,
+        purchaseAmountPaise: r.purchase_amount_paise ? Number(r.purchase_amount_paise) : undefined,
+        redeemedAt: r.redeemed_at,
+        showroomLocation: r.showroom_location || 'Bhadu Market Showroom, Jodhpur',
+      }));
+    }
+
+    // 2. Fallback: query vouchers table with status = 'redeemed'
+    const { data: vchData, error: vchErr } = await client
+      .from('vouchers')
+      .select(`
+        id,
+        voucher_code,
+        bill_reference,
+        purchase_amount_paise,
+        redeemed_at,
+        redeemed_by_staff_id,
+        customer:profiles!user_id(id, full_name),
+        staff:profiles!redeemed_by_staff_id(id, full_name),
+        rewards(id, name)
+      `)
+      .eq('status', 'redeemed')
+      .order('redeemed_at', { ascending: false })
+      .limit(limit);
+
+    if (vchErr || !vchData) return [];
+
+    return vchData.map((v: any) => ({
+      id: 'rdm-' + v.id,
+      voucherId: v.id,
+      voucherCode: v.voucher_code,
+      customerName: v.customer?.full_name || 'Customer',
+      rewardName: v.rewards?.name || 'Festive Reward',
+      staffId: v.redeemed_by_staff_id || '',
+      staffName: v.staff?.full_name || 'Showroom Staff',
+      billReference: v.bill_reference || undefined,
+      purchaseAmountPaise: v.purchase_amount_paise ? Number(v.purchase_amount_paise) : undefined,
+      redeemedAt: v.redeemed_at || new Date().toISOString(),
+      showroomLocation: 'Bhadu Market Showroom, Jodhpur',
+    }));
+  } catch (err) {
+    console.warn('Cloud recent redemptions error:', err);
+    return [];
   }
 }
 

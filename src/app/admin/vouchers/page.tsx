@@ -7,7 +7,7 @@ import { Search, Ticket, CheckCircle2, Clock, XCircle, AlertCircle, ShieldAlert,
 export default function AdminVouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('issued');
   const [search, setSearch] = useState('');
 
   const fetchVouchers = (status?: string, term?: string) => {
@@ -92,10 +92,10 @@ export default function AdminVouchersPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-2.5 rounded-xl bg-[#21171A] border border-[#E8C477]/30 text-xs text-[#FFF4E3] focus:outline-none"
         >
-          <option value="">All Statuses</option>
-          <option value="issued">Issued (Unredeemed)</option>
-          <option value="redeemed">Redeemed</option>
+          <option value="issued">Issued / Unredeemed (Active Vouchers)</option>
+          <option value="redeemed">Redeemed / Claimed</option>
           <option value="cancelled">Cancelled</option>
+          <option value="">All Statuses (Show Everything)</option>
         </select>
       </div>
 

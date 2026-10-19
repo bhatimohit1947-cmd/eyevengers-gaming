@@ -1261,6 +1261,69 @@ export const db = {
     return rows.map(r => this.mapVoucher(r));
   },
 
+  saveVoucherLocally(v: any) {
+    const database = getDb();
+    const now = new Date().toISOString();
+    const vchId = v.id || v.voucherId;
+    const vchCode = v.voucherCode || v.voucher_code;
+    const userId = v.userId || v.user_id;
+    const rewardId = v.rewardId || v.reward_id;
+    const campaignId = v.campaignId || v.campaign_id || 'cmp-festive-navratri-2026';
+    const status = v.status || 'issued';
+
+    // Ensure reward exists in SQLite
+    if (rewardId) {
+      try {
+        const rwCheck = database.prepare('SELECT id FROM rewards WHERE id = ?').get(rewardId);
+        if (!rwCheck) {
+          database.prepare(`
+            INSERT OR IGNORE INTO rewards (id, campaign_id, name, description, reward_type, monetary_value_paise, discount_percentage, min_purchase_paise, total_inventory, remaining_inventory, probability_weight, is_active, terms, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'fixed_discount', 0, 0, 0, 1000, 1000, 10, 1, 'Showroom redemption terms apply', ?, ?)
+          `).run(rewardId, campaignId, v.rewardName || 'Festive Reward', 'Exclusive festive discount', now, now);
+        }
+      } catch {}
+    }
+
+    // Ensure customer profile exists in SQLite
+    if (userId) {
+      try {
+        const pCheck = database.prepare('SELECT id FROM profiles WHERE id = ?').get(userId);
+        if (!pCheck) {
+          database.prepare(`
+            INSERT OR IGNORE INTO profiles (id, mobile, full_name, password_hash, role, status, created_at, updated_at)
+            VALUES (?, ?, ?, '', 'customer', 'active', ?, ?)
+          `).run(userId, v.customerMobile || '+910000000000', v.customerName || 'Valued Customer', now, now);
+        }
+      } catch {}
+    }
+
+    const stmt = database.prepare(`
+      INSERT OR REPLACE INTO vouchers (
+        id, voucher_code, user_id, reward_id, campaign_id, game_play_id,
+        issue_date, expiry_date, status, qr_token, redeemed_at,
+        redeemed_by_staff_id, bill_reference, purchase_amount_paise, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      vchId,
+      vchCode,
+      userId,
+      rewardId,
+      campaignId,
+      v.gamePlayId || v.game_play_id || null,
+      v.issueDate || v.issue_date || v.createdAt || v.created_at || now,
+      v.expiryDate || v.expiry_date || new Date(Date.now() + 14 * 86400000).toISOString(),
+      status,
+      v.qrToken || v.qr_token || ('QR-' + vchCode),
+      v.redeemedAt || v.redeemed_at || null,
+      v.redeemedByStaffId || v.redeemed_by_staff_id || null,
+      v.billReference || v.bill_reference || null,
+      v.purchaseAmountPaise || v.purchase_amount_paise || null,
+      v.createdAt || v.created_at || now
+    );
+  },
+
   // SHOWROOM REDEMPTION TRANSACTION (Safe against race conditions)
   redeemVoucher(params: {
     voucherId: string;
@@ -1275,8 +1338,8 @@ export const db = {
     try {
       database.exec('BEGIN IMMEDIATE TRANSACTION;');
 
-      const vStmt = database.prepare('SELECT * FROM vouchers WHERE id = ?');
-      const vRow = vStmt.get(params.voucherId) as Record<string, unknown> | undefined;
+      const vStmt = database.prepare('SELECT * FROM vouchers WHERE id = ? OR voucher_code = ?');
+      const vRow = vStmt.get(params.voucherId, params.voucherId) as Record<string, unknown> | undefined;
 
       if (!vRow) {
         database.exec('ROLLBACK;');
@@ -1299,6 +1362,8 @@ export const db = {
         return { success: false, error: 'Voucher has expired.' };
       }
 
+      const actualVoucherId = vRow.id as string;
+
       // Mark redeemed
       const updateStmt = database.prepare(`
         UPDATE vouchers 
@@ -1310,7 +1375,7 @@ export const db = {
         params.staffId,
         params.billReference || null,
         params.purchaseAmountPaise || 0,
-        params.voucherId
+        actualVoucherId
       );
 
       if (res.changes === 0) {
@@ -1319,8 +1384,10 @@ export const db = {
       }
 
       // Update reward redeemed_count
-      const incRewardStmt = database.prepare('UPDATE rewards SET redeemed_count = redeemed_count + 1 WHERE id = ?');
-      incRewardStmt.run(vRow.reward_id as string);
+      try {
+        const incRewardStmt = database.prepare('UPDATE rewards SET redeemed_count = redeemed_count + 1 WHERE id = ?');
+        incRewardStmt.run(vRow.reward_id as string);
+      } catch {}
 
       // Record in redemptions table
       const insertRedemptionStmt = database.prepare(`
@@ -1329,7 +1396,7 @@ export const db = {
       `);
       insertRedemptionStmt.run(
         'rdm-' + crypto.randomUUID(),
-        params.voucherId,
+        actualVoucherId,
         vRow.voucher_code as string,
         params.staffId,
         params.billReference || null,
@@ -1340,7 +1407,7 @@ export const db = {
 
       database.exec('COMMIT;');
 
-      const updatedVoucher = this.getVoucherById(params.voucherId)!;
+      const updatedVoucher = this.getVoucherById(actualVoucherId)!;
       return { success: true, voucher: updatedVoucher };
     } catch (err: unknown) {
       try { database.exec('ROLLBACK;'); } catch {}
@@ -1420,12 +1487,16 @@ export const db = {
   getRecentRedemptions(limit = 20): RedemptionRecord[] {
     const database = getDb();
     const stmt = database.prepare(`
-      SELECT r.*, u.full_name as staff_name, v.user_id, c.full_name as customer_name, rw.name as reward_name
+      SELECT r.*, 
+             COALESCE(u.full_name, 'Showroom Staff') as staff_name, 
+             v.user_id, 
+             COALESCE(c.full_name, 'Valued Customer') as customer_name, 
+             COALESCE(rw.name, 'Festive Reward') as reward_name
       FROM redemptions r
-      JOIN profiles u ON r.staff_id = u.id
-      JOIN vouchers v ON r.voucher_id = v.id
-      JOIN profiles c ON v.user_id = c.id
-      JOIN rewards rw ON v.reward_id = rw.id
+      LEFT JOIN profiles u ON r.staff_id = u.id
+      LEFT JOIN vouchers v ON r.voucher_id = v.id
+      LEFT JOIN profiles c ON v.user_id = c.id
+      LEFT JOIN rewards rw ON v.reward_id = rw.id
       ORDER BY r.redeemed_at DESC LIMIT ?
     `);
     const rows = stmt.all(limit) as Record<string, unknown>[];
@@ -1440,7 +1511,7 @@ export const db = {
       billReference: r.bill_reference as string | undefined,
       purchaseAmountPaise: r.purchase_amount_paise ? Number(r.purchase_amount_paise) : undefined,
       redeemedAt: r.redeemed_at as string,
-      showroomLocation: r.showroom_location as string,
+      showroomLocation: (r.showroom_location as string) || 'Bhadu Market Showroom, Jodhpur',
     }));
   },
 

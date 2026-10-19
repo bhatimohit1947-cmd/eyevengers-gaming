@@ -18,14 +18,29 @@ export async function GET(req: Request) {
 
   // Merge and deduplicate by voucherCode or id
   const map = new Map<string, any>();
-  for (const v of localVouchers) {
-    const key = v.voucherCode || v.id;
-    map.set(key, v);
-  }
   for (const v of cloudVouchers) {
     const key = v.voucherCode || v.id;
-    if (!map.has(key)) {
-      map.set(key, v);
+    map.set(key, { ...v });
+  }
+  for (const v of localVouchers) {
+    const key = v.voucherCode || v.id;
+    if (map.has(key)) {
+      const existing = map.get(key);
+      if (v.status === 'redeemed' || existing.status === 'redeemed') {
+        existing.status = 'redeemed';
+        existing.redeemedAt = existing.redeemedAt || v.redeemedAt;
+        existing.billReference = existing.billReference || v.billReference;
+        existing.purchaseAmountPaise = existing.purchaseAmountPaise || v.purchaseAmountPaise;
+        existing.redeemedByStaffId = existing.redeemedByStaffId || v.redeemedByStaffId;
+      }
+      if (v.status === 'cancelled' || existing.status === 'cancelled') {
+        existing.status = 'cancelled';
+      }
+      // Ensure customer details from profile are preserved if available
+      if (!existing.customerName && v.customerName) existing.customerName = v.customerName;
+      if (!existing.customerMobile && v.customerMobile) existing.customerMobile = v.customerMobile;
+    } else {
+      map.set(key, { ...v });
     }
   }
 

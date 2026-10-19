@@ -38,7 +38,7 @@ export function MandalaMotif({ className = "w-24 h-24 text-[#E8C477]" }: { class
 export function ToranBorder({ className = "w-full text-[#E8C477]" }: { className?: string }) {
   return (
     <div className={`flex justify-center items-center overflow-hidden py-1 opacity-60 ${className}`}>
-      <svg width="100%" height="16" viewBox="0 0 600 16" fill="none" preserveAspectRatio="repeat-x" xmlns="http://www.w3.org/2000/svg">
+      <svg width="100%" height="16" viewBox="0 0 600 16" fill="none" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <pattern id="festive-arch" width="40" height="16" patternUnits="userSpaceOnUse">
           <path d="M0 0 Q20 14 40 0" stroke="currentColor" strokeWidth="0.8" fill="none" />
           <path d="M5 0 Q20 10 35 0" stroke="currentColor" strokeWidth="0.5" fill="none" opacity="0.6" />

@@ -91,6 +91,7 @@ function RedeemContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           voucherId: voucher.id,
+          voucherCode: voucher.voucherCode,
           billReference: billReference.trim() || undefined,
           purchaseAmount: purchaseAmount ? parseFloat(purchaseAmount) : undefined,
           showroomLocation: 'Bhadu Market Showroom, Jodhpur',
